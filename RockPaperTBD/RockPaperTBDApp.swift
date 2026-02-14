@@ -1,17 +1,14 @@
-//
-//  RockPaperTBDApp.swift
-//  RockPaperTBD
-//
-//  Created by Jacob Winmill on 2/11/26.
-//
-
 import SwiftUI
 
 @main
 struct RockPaperTBDApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .preferredColorScheme(.dark)
+                .statusBarHidden()
         }
     }
 }
