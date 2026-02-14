@@ -51,6 +51,7 @@ enum RoundResult {
 }
 
 enum GameState: Equatable {
+    case modeSelect
     case start
     case player1Select
     case transition
@@ -58,4 +59,13 @@ enum GameState: Equatable {
     case countdown
     case reveal
     case gameOver
+    case hostWaiting
+    case joinGame
+    case onlineSelect
+    case onlineWaiting
+}
+
+enum PlayerRole {
+    case host
+    case guest
 }

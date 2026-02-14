@@ -1,7 +1,7 @@
 # CLAUDE.md - RockPaperTBD
 
 ## Project
-SwiftUI iOS game - Rock Paper Scissors. Pass-and-play on a single device.
+SwiftUI iOS game - Rock Paper Scissors. Pass-and-play on a single device + online 2-player via Firebase Realtime Database.
 
 ## Build & Run
 ```bash
@@ -20,6 +20,11 @@ xcodebuild -scheme RockPaperTBD -destination 'platform=iOS Simulator,name=iPhone
 - Confetti via `Canvas` + `TimelineView` (not individual SwiftUI views)
 - `Theme.swift` caches all `Color(hex:)` values as static constants
 - `Color(hex:)` extension lives in `CountdownView.swift`
+- **Online multiplayer** via Firebase RTDB (`GameSession` class)
+- No Firebase Auth — device UUID in UserDefaults (`PlayerIdentity`)
+- Room code matchmaking (4-char codes, `/games/{code}` in RTDB)
+- **Friends system** via Firebase RTDB (`FriendsManager` class) — mutual friendships, friend requests, game invites
+- Friend codes: 6-char generated once per player, stored in `/players/` + `/friendCodeIndex/`
 
 ## Key Conventions
 - The gesture enum is called `Move` (not `Gesture` - conflicts with SwiftUI's `Gesture` protocol)
@@ -27,21 +32,51 @@ xcodebuild -scheme RockPaperTBD -destination 'platform=iOS Simulator,name=iPhone
 - Portrait locked via `AppDelegate`, dark mode enforced, status bar hidden
 - 3 gestures: Rock, Paper, Scissors (classic RPS)
 - Best of X mode: `startGame(bestOf:)` takes Int (0 = endless, 3/5/7 for match play)
+- Online mode: `hostGame(bestOf:)` / `joinGame(code:)` / `submitOnlineMove(_:)` / `onlineNextRound()`
+- `GameSession` manages all Firebase RTDB interaction; `onUpdate` callback drives ViewModel state transitions
+- Host controls round advancement (clears moves in Firebase); guest transitions via observer
+- Friends: `FriendsManager` is separate from `GameSession` (persistent social layer vs. ephemeral game session)
+- `DisplayName` helper caches player name in UserDefaults; `FriendCode` generates 6-char codes from same charset as `RoomCode`
 
 ## File Map
 | File | Purpose |
 |------|---------|
-| `Gesture.swift` | `Move` enum, `RoundResult`, `GameState` |
-| `GameViewModel.swift` | State machine, scoring, best-of logic |
+| `Gesture.swift` | `Move` enum, `RoundResult`, `GameState`, `PlayerRole` |
+| `GameViewModel.swift` | State machine, scoring, best-of, local + online methods |
 | `ContentView.swift` | Main router with animated transitions |
-| `PlayerSelectView.swift` | Gesture selection (3-across HStack) |
+| `PlayerSelectView.swift` | Gesture selection (3-across HStack), `isOnline` param |
 | `CountdownView.swift` | 3-2-1-THROW animation + `Color(hex:)` extension |
 | `RevealView.swift` | Results display + `ConfettiOverlay` |
 | `TransitionView.swift` | Tap-to-continue screen + `StartView` (title + best-of picker) |
-| `GameOverView.swift` | Match winner screen with confetti |
+| `GameOverView.swift` | Match winner screen with confetti + post-game add friend |
 | `SoundManager.swift` | AVAudioEngine tone generation + UIKit haptics |
-| `Theme.swift` | Cached Color constants |
-| `AppDelegate.swift` | Portrait orientation lock |
+| `Theme.swift` | Cached Color constants (player, countdown, results, friends) |
+| `AppDelegate.swift` | Portrait lock + `FirebaseApp.configure()` |
+| `OnlineGame.swift` | `OnlineGameData`, `PlayerIdentity`, `RoomCode` |
+| `GameSession.swift` | Firebase RTDB manager (create/join/observe/submit/cleanup) |
+| `ModeSelectView.swift` | Mode selection: Pass & Play, Create Game, Join Game, Friends + invite banner |
+| `HostWaitingView.swift` | Room code display + waiting for guest |
+| `JoinGameView.swift` | Room code input + join validation |
+| `OnlineWaitingView.swift` | Waiting for opponent's move |
+| `FriendModels.swift` | `PlayerProfile`, `FriendData`, `FriendRequest`, `GameInvite`, `FriendCode`, `DisplayName` |
+| `FriendsManager.swift` | Firebase RTDB social layer (profile/friends/requests/invites) |
+| `FriendsListView.swift` | Friends hub: friend code, requests, friends list, invite/remove |
+| `AddFriendView.swift` | 6-char friend code input + validation |
+| `DisplayNameView.swift` | One-time display name entry |
+
+## Dependencies
+- `firebase-ios-sdk` (SPM, `FirebaseDatabase` product only) — online multiplayer
+- Requires `GoogleService-Info.plist` in `RockPaperTBD/` (not checked into git)
+
+## Firebase RTDB Schema
+```
+/games/{code}/          — active game sessions (existing)
+/players/{uuid}/        — player profiles (displayName, friendCode, createdAt)
+/friendCodeIndex/{code}/ — reverse lookup (friendCode → playerId)
+/friends/{uuid}/{friendUuid}/ — mutual friendships (dual-write)
+/friendRequests/{targetUuid}/{senderUuid}/ — pending friend requests
+/invites/{targetUuid}/{senderUuid}/ — game invites (auto-removed onDisconnect)
+```
 
 ## Status
-Phase 2 in progress. See `spec.md` for full details and future phase ideas.
+Online multiplayer + friends system implemented. See `spec.md` for full details and future phase ideas.

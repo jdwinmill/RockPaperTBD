@@ -36,4 +36,9 @@ enum Theme {
     static let startBottom = Color(hex: "4C1D95")
     static let accentPink = Color(hex: "EC4899")
     static let accentPurple = Color(hex: "8B5CF6")
+
+    // Friends
+    static let friendGreen = Color(hex: "10B981")
+    static let friendGreenEnd = Color(hex: "059669")
+    static let friendBadge = Color(hex: "EF4444")
 }

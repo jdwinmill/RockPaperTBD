@@ -9,6 +9,7 @@ struct RevealView: View {
     let currentRound: Int
     let flavorText: String?
     let isMatchOver: Bool
+    var isOnlineGuest: Bool = false
     let onNextRound: () -> Void
     let onReset: () -> Void
 
@@ -69,7 +70,7 @@ struct RevealView: View {
             }
         }
         .onTapGesture {
-            if showButtons {
+            if showButtons && !isOnlineGuest {
                 onNextRound()
             }
         }
@@ -180,21 +181,28 @@ struct RevealView: View {
 
     private var buttonSection: some View {
         VStack(spacing: 16) {
-            Button {
-                onNextRound()
-            } label: {
-                Text(isMatchOver ? "Match Over!" : result == .tie ? "Rematch!" : "Next Round")
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
-                    .foregroundStyle(.black)
-                    .frame(maxWidth: .infinity)
+            if isOnlineGuest && !isMatchOver {
+                Text("Waiting for host...")
+                    .font(.system(size: 20, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
                     .padding(.vertical, 18)
-                    .background(
-                        Capsule()
-                            .fill(.white)
-                            .shadow(color: .white.opacity(0.3), radius: 12)
-                    )
+            } else {
+                Button {
+                    onNextRound()
+                } label: {
+                    Text(isMatchOver ? "Match Over!" : result == .tie ? "Rematch!" : "Next Round")
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundStyle(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 18)
+                        .background(
+                            Capsule()
+                                .fill(.white)
+                                .shadow(color: .white.opacity(0.3), radius: 12)
+                        )
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
 
             Button {
                 onReset()

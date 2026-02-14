@@ -5,12 +5,15 @@ struct GameOverView: View {
     let player1Score: Int
     let player2Score: Int
     let totalRounds: Int
+    var opponentId: String? = nil
+    var friendsManager: FriendsManager? = nil
     let onPlayAgain: () -> Void
 
     @State private var appeared = false
     @State private var trophyScale: CGFloat = 0.0
     @State private var confettiParticles: [ConfettiParticle] = []
     @State private var showConfetti = false
+    @State private var sentRequest = false
 
     private var winnerLabel: String {
         switch winner {
@@ -26,6 +29,11 @@ struct GameOverView: View {
         case .player2Wins: return [Theme.p2WinStart, Theme.p2WinEnd]
         case .tie: return [Theme.tieStart, Theme.tieEnd]
         }
+    }
+
+    private var canAddFriend: Bool {
+        guard let opponentId, let fm = friendsManager else { return false }
+        return !fm.friends.contains(where: { $0.playerId == opponentId }) && !sentRequest
     }
 
     var body: some View {
@@ -79,6 +87,43 @@ struct GameOverView: View {
 
                 Spacer()
 
+                if canAddFriend {
+                    Button {
+                        guard let opponentId else { return }
+                        friendsManager?.sendFriendRequestById(playerId: opponentId)
+                        withAnimation { sentRequest = true }
+                    } label: {
+                        Text("Add Friend")
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(
+                                Capsule()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [Theme.friendGreen, Theme.friendGreenEnd],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .shadow(color: Theme.friendGreen.opacity(0.4), radius: 12)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 40)
+                    .opacity(appeared ? 1 : 0)
+                    .transition(.opacity)
+                }
+
+                if sentRequest {
+                    Text("Friend request sent!")
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundStyle(Theme.friendGreen)
+                        .opacity(appeared ? 1 : 0)
+                        .transition(.opacity)
+                }
+
                 Button {
                     onPlayAgain()
                 } label: {
@@ -109,7 +154,8 @@ struct GameOverView: View {
             }
         }
         .onTapGesture {
-            if appeared {
+            // Tap-to-continue only for local games (no Add Friend button)
+            if appeared && opponentId == nil {
                 onPlayAgain()
             }
         }

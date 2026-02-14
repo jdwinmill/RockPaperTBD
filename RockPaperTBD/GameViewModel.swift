@@ -2,7 +2,7 @@ import SwiftUI
 
 @Observable
 final class GameViewModel {
-    var gameState: GameState = .start
+    var gameState: GameState = .modeSelect
     var player1Choice: Move?
     var player2Choice: Move?
     var player1Score: Int = 0
@@ -11,6 +11,20 @@ final class GameViewModel {
     var roundResult: RoundResult?
     var flavorText: String?
     var bestOf: Int = 0
+    var showDisconnectAlert: Bool = false
+
+    // Online
+    var session: GameSession?
+    var isOnline: Bool { session != nil }
+
+    var opponentId: String? {
+        guard let data = session?.gameData else { return nil }
+        if session?.role == .host {
+            return data.guestId
+        } else {
+            return data.hostId
+        }
+    }
 
     var winsNeeded: Int {
         bestOf == 0 ? Int.max : (bestOf / 2) + 1
@@ -25,6 +39,8 @@ final class GameViewModel {
     var isMatchOver: Bool { matchWinner != nil }
 
     let sound = SoundManager()
+
+    // MARK: - Local Mode
 
     func selectGesture(_ gesture: Move, forPlayer player: Int) {
         sound.playTap()
@@ -59,6 +75,20 @@ final class GameViewModel {
     }
 
     func resetGame() {
+        session?.cleanup()
+        session = nil
+        player1Choice = nil
+        player2Choice = nil
+        player1Score = 0
+        player2Score = 0
+        currentRound = 1
+        roundResult = nil
+        flavorText = nil
+        bestOf = 0
+        gameState = .modeSelect
+    }
+
+    func resetToStart() {
         player1Choice = nil
         player2Choice = nil
         player1Score = 0
@@ -75,9 +105,130 @@ final class GameViewModel {
     }
 
     func startGame(bestOf: Int) {
-        resetGame()
+        player1Choice = nil
+        player2Choice = nil
+        player1Score = 0
+        player2Score = 0
+        currentRound = 1
+        roundResult = nil
+        flavorText = nil
         self.bestOf = bestOf
         gameState = .player1Select
+    }
+
+    // MARK: - Online Mode
+
+    func hostGame(bestOf: Int, onCreated: (() -> Void)? = nil) {
+        let session = GameSession()
+        self.session = session
+        self.bestOf = bestOf
+        player1Score = 0
+        player2Score = 0
+        currentRound = 1
+        player1Choice = nil
+        player2Choice = nil
+        roundResult = nil
+        flavorText = nil
+        session.onCreated = onCreated
+        session.createGame(bestOf: bestOf)
+        session.onUpdate = { [weak self] in self?.handleSessionUpdate() }
+        gameState = .hostWaiting
+    }
+
+    func joinGame(code: String, completion: @escaping (Bool, String?) -> Void) {
+        let session = GameSession()
+        self.session = session
+        session.joinGame(code: code) { [weak self] success in
+            guard let self else { return }
+            if success {
+                session.onUpdate = { [weak self] in self?.handleSessionUpdate() }
+                if let data = session.gameData {
+                    self.bestOf = data.bestOf
+                }
+                self.player1Score = 0
+                self.player2Score = 0
+                self.currentRound = 1
+                self.gameState = .onlineSelect
+                completion(true, nil)
+            } else {
+                let error = session.error
+                self.session = nil
+                completion(false, error)
+            }
+        }
+    }
+
+    func submitOnlineMove(_ move: Move) {
+        sound.playTap()
+        session?.submitMove(move)
+        if session?.role == .host {
+            player1Choice = move
+        } else {
+            player2Choice = move
+        }
+        gameState = .onlineWaiting
+    }
+
+    func onlineNextRound() {
+        if isMatchOver {
+            gameState = .gameOver
+            return
+        }
+        guard session?.role == .host else { return }
+        let wasTie = roundResult == .tie
+        player1Choice = nil
+        player2Choice = nil
+        roundResult = nil
+        flavorText = nil
+        if !wasTie {
+            currentRound += 1
+        }
+        session?.clearRound(currentRound: currentRound)
+        gameState = .onlineSelect
+    }
+
+    func handleSessionUpdate() {
+        guard let session else { return }
+
+        if session.opponentDisconnected {
+            showDisconnectAlert = true
+            return
+        }
+
+        guard let data = session.gameData else { return }
+
+        switch gameState {
+        case .hostWaiting:
+            if data.guestId != nil {
+                gameState = .onlineSelect
+            }
+
+        case .onlineWaiting:
+            if data.bothMovesSubmitted {
+                player1Choice = Move(rawValue: data.hostMove!)
+                player2Choice = Move(rawValue: data.guestMove!)
+                gameState = .countdown
+            }
+
+        case .onlineSelect:
+            if session.role == .guest {
+                currentRound = data.currentRound
+            }
+
+        case .reveal:
+            // Guest: detect host starting next round (moves cleared)
+            if session.role == .guest && data.hostMove == nil && data.guestMove == nil {
+                player1Choice = nil
+                player2Choice = nil
+                roundResult = nil
+                flavorText = nil
+                currentRound = data.currentRound
+                gameState = .onlineSelect
+            }
+
+        default:
+            break
+        }
     }
 
     private func determineWinner() {

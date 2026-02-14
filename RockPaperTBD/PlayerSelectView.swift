@@ -5,6 +5,7 @@ struct PlayerSelectView: View {
     let currentRound: Int
     let player1Score: Int
     let player2Score: Int
+    var isOnline: Bool = false
     let onSelect: (Move) -> Void
 
     @State private var appeared = false
@@ -26,19 +27,19 @@ struct PlayerSelectView: View {
             VStack(spacing: 24) {
                 Spacer()
 
-                Text("Player \(playerNumber)")
+                Text(isOnline ? "Your Turn" : "Player \(playerNumber)")
                     .font(.system(size: 48, weight: .black, design: .rounded))
                     .foregroundStyle(.white)
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : -20)
 
-                Text(playerNumber == 1 ? "Choose your move" : "Choose your move")
+                Text("Choose your move")
                     .font(.system(size: 20, weight: .medium, design: .rounded))
                     .foregroundStyle(.white.opacity(0.8))
                     .opacity(appeared ? 1 : 0)
 
-                if playerNumber == 1 {
-                    Text("Player 2, look away! 👀")
+                if playerNumber == 1 && !isOnline {
+                    Text("Player 2, look away! \u{1F440}")
                         .font(.system(size: 16, weight: .medium, design: .rounded))
                         .foregroundStyle(.white.opacity(0.6))
                         .opacity(appeared ? 1 : 0)

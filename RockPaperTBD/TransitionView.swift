@@ -54,6 +54,7 @@ struct TransitionView: View {
 
 struct StartView: View {
     let onStart: (Int) -> Void
+    var onBack: (() -> Void)? = nil
 
     @State private var appeared = false
     @State private var emojiOffset: [CGFloat] = [0, 0, 0]
@@ -77,10 +78,29 @@ struct StartView: View {
             .ignoresSafeArea()
 
             VStack(spacing: 24) {
+                if let onBack {
+                    HStack {
+                        Button {
+                            onBack()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "chevron.left")
+                                Text("Back")
+                            }
+                            .font(.system(size: 16, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.6))
+                        }
+                        .buttonStyle(.plain)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                }
+
                 Spacer()
 
                 HStack(spacing: 20) {
-                    Text("🪨")
+                    Text("\u{1FAA8}")
                         .font(.system(size: 52))
                         .offset(y: emojiOffset[0])
                     Text("📄")
