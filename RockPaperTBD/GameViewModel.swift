@@ -26,6 +26,20 @@ final class GameViewModel {
         }
     }
 
+    var player1Name: String {
+        if isOnline {
+            return session?.gameData?.hostName ?? "Player 1"
+        }
+        return "Player 1"
+    }
+
+    var player2Name: String {
+        if isOnline {
+            return session?.gameData?.guestName ?? "Player 2"
+        }
+        return "Player 2"
+    }
+
     var winsNeeded: Int {
         bestOf == 0 ? Int.max : (bestOf / 2) + 1
     }
@@ -37,6 +51,14 @@ final class GameViewModel {
     }
 
     var isMatchOver: Bool { matchWinner != nil }
+
+    var didLocalPlayerLose: Bool {
+        guard isOnline, let winner = matchWinner, let role = session?.role else { return false }
+        switch role {
+        case .host: return winner == .player2Wins
+        case .guest: return winner == .player1Wins
+        }
+    }
 
     let sound = SoundManager()
 
@@ -242,12 +264,20 @@ final class GameViewModel {
             roundResult = .player1Wins
             player1Score += 1
             flavorText = p1.flavorText(against: p2)
-            sound.playWin()
+            if isOnline && session?.role == .guest {
+                sound.playLose()
+            } else {
+                sound.playWin()
+            }
         } else {
             roundResult = .player2Wins
             player2Score += 1
             flavorText = p2.flavorText(against: p1)
-            sound.playWin()
+            if isOnline && session?.role == .host {
+                sound.playLose()
+            } else {
+                sound.playWin()
+            }
         }
     }
 }

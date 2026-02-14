@@ -3,6 +3,8 @@ import Foundation
 struct OnlineGameData {
     var hostId: String
     var guestId: String?
+    var hostName: String?
+    var guestName: String?
     var bestOf: Int
     var hostMove: String?
     var guestMove: String?

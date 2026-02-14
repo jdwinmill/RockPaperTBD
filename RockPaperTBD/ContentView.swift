@@ -120,6 +120,8 @@ struct ContentView: View {
                         player1Choice: p1,
                         player2Choice: p2,
                         result: result,
+                        player1Name: game.player1Name,
+                        player2Name: game.player2Name,
                         player1Score: game.player1Score,
                         player2Score: game.player2Score,
                         currentRound: game.currentRound,
@@ -148,11 +150,15 @@ struct ContentView: View {
                 if let winner = game.matchWinner {
                     GameOverView(
                         winner: winner,
+                        player1Name: game.player1Name,
+                        player2Name: game.player2Name,
                         player1Score: game.player1Score,
                         player2Score: game.player2Score,
                         totalRounds: game.currentRound,
                         opponentId: game.opponentId,
                         friendsManager: friendsManager,
+                        sound: game.sound,
+                        didLose: game.didLocalPlayerLose,
                         onPlayAgain: {
                             if game.isOnline {
                                 game.resetGame()

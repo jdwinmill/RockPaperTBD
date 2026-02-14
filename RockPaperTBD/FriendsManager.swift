@@ -105,7 +105,7 @@ final class FriendsManager {
     func sendFriendRequest(friendCode: String, completion: @escaping (Bool, String?) -> Void) {
         let upperCode = friendCode.uppercased()
         db.child("friendCodeIndex").child(upperCode).child("playerId")
-            .observeSingleEvent(of: .value) { [weak self] snapshot in
+            .observeSingleEvent(of: .value, with: { [weak self] snapshot in
                 DispatchQueue.main.async {
                     guard let self else { return }
                     guard let targetId = snapshot.value as? String else {
@@ -122,7 +122,11 @@ final class FriendsManager {
                     }
                     self.writeRequest(targetId: targetId, completion: completion)
                 }
-            }
+            }, withCancel: { error in
+                DispatchQueue.main.async {
+                    completion(false, "Unable to look up friend code")
+                }
+            })
     }
 
     func sendFriendRequestById(playerId: String) {

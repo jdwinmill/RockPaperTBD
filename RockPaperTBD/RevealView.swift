@@ -4,6 +4,8 @@ struct RevealView: View {
     let player1Choice: Move
     let player2Choice: Move
     let result: RoundResult
+    let player1Name: String
+    let player2Name: String
     let player1Score: Int
     let player2Score: Int
     let currentRound: Int
@@ -12,6 +14,14 @@ struct RevealView: View {
     var isOnlineGuest: Bool = false
     let onNextRound: () -> Void
     let onReset: () -> Void
+
+    private var resultLabel: String {
+        switch result {
+        case .player1Wins: return "\(player1Name) Wins!"
+        case .player2Wins: return "\(player2Name) Wins!"
+        case .tie: return "It's a Tie!"
+        }
+    }
 
     @State private var revealed = false
     @State private var showResult = false
@@ -44,7 +54,7 @@ struct RevealView: View {
 
                 gestureRevealSection
 
-                resultLabel
+                resultLabelView
                     .padding(.top, 8)
 
                 if let flavorText {
@@ -82,9 +92,10 @@ struct RevealView: View {
     private var gestureRevealSection: some View {
         HStack(spacing: 24) {
             VStack(spacing: 12) {
-                Text("P1")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                Text(player1Name)
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.7))
+                    .lineLimit(1)
 
                 Text(player1Choice.emoji)
                     .font(.system(size: 80))
@@ -111,9 +122,10 @@ struct RevealView: View {
                 .foregroundStyle(.white.opacity(0.5))
 
             VStack(spacing: 12) {
-                Text("P2")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                Text(player2Name)
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.7))
+                    .lineLimit(1)
 
                 Text(player2Choice.emoji)
                     .font(.system(size: 80))
@@ -138,8 +150,8 @@ struct RevealView: View {
         .padding(.horizontal, 24)
     }
 
-    private var resultLabel: some View {
-        Text(result.label)
+    private var resultLabelView: some View {
+        Text(resultLabel)
             .font(.system(size: 40, weight: .black, design: .rounded))
             .foregroundStyle(result == .tie ? .white : Theme.winGold)
             .shadow(color: .black.opacity(0.3), radius: 4)
@@ -150,9 +162,10 @@ struct RevealView: View {
     private var scoreSection: some View {
         HStack(spacing: 40) {
             VStack(spacing: 4) {
-                Text("Player 1")
+                Text(player1Name)
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.6))
+                    .lineLimit(1)
                 Text("\(player1Score)")
                     .font(.system(size: 36, weight: .black, design: .rounded))
                     .foregroundStyle(.white)
@@ -168,9 +181,10 @@ struct RevealView: View {
             }
 
             VStack(spacing: 4) {
-                Text("Player 2")
+                Text(player2Name)
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.6))
+                    .lineLimit(1)
                 Text("\(player2Score)")
                     .font(.system(size: 36, weight: .black, design: .rounded))
                     .foregroundStyle(.white)

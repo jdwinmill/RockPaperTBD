@@ -18,6 +18,7 @@ final class SoundManager {
     private var tapBuffer: AVAudioPCMBuffer?
     private var winBuffers: [AVAudioPCMBuffer] = []
     private var tieBuffers: [AVAudioPCMBuffer] = []
+    private var loseBuffers: [AVAudioPCMBuffer] = []
 
     init() {
         setupEngine()
@@ -68,6 +69,12 @@ final class SoundManager {
             makeBuffer(frequency: 380, duration: 0.2),
         ].compactMap { $0 }
 
+        // Lose — descending tones
+        loseBuffers = [
+            makeBuffer(frequency: 520, duration: 0.2),
+            makeBuffer(frequency: 400, duration: 0.2),
+            makeBuffer(frequency: 300, duration: 0.35),
+        ].compactMap { $0 }
     }
 
     func playCountdownBeep(step: Int) {
@@ -109,6 +116,20 @@ final class SoundManager {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
             guard let self else { return }
             self.scheduleBuffer(self.tieBuffers[1])
+        }
+    }
+
+    func playLose() {
+        notification.notificationOccurred(.error)
+        guard loseBuffers.count == 3 else { return }
+        scheduleBuffer(loseBuffers[0])
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            guard let self else { return }
+            self.scheduleBuffer(self.loseBuffers[1])
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+            guard let self else { return }
+            self.scheduleBuffer(self.loseBuffers[2])
         }
     }
 

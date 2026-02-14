@@ -41,6 +41,7 @@ final class GameSession {
 
                 let data: [String: Any] = [
                     "hostId": PlayerIdentity.id,
+                    "hostName": DisplayName.saved ?? "Player 1",
                     "bestOf": bestOf,
                     "currentRound": 1,
                     "timestamp": ServerValue.timestamp()
@@ -77,7 +78,9 @@ final class GameSession {
                 }
 
                 ref.child("guestId").setValue(PlayerIdentity.id)
+                ref.child("guestName").setValue(DisplayName.saved ?? "Player 2")
                 ref.child("guestId").onDisconnectRemoveValue()
+                ref.child("guestName").onDisconnectRemoveValue()
                 ref.child("guestMove").onDisconnectRemoveValue()
                 self.observeGame()
                 self.observeConnection()
@@ -116,6 +119,8 @@ final class GameSession {
                 let data = OnlineGameData(
                     hostId: dict["hostId"] as? String ?? "",
                     guestId: dict["guestId"] as? String,
+                    hostName: dict["hostName"] as? String,
+                    guestName: dict["guestName"] as? String,
                     bestOf: dict["bestOf"] as? Int ?? 3,
                     hostMove: dict["hostMove"] as? String,
                     guestMove: dict["guestMove"] as? String,
@@ -123,13 +128,19 @@ final class GameSession {
                     timestamp: dict["timestamp"] as? TimeInterval ?? 0
                 )
 
-                // When guest joins, cancel the lobby-cleanup onDisconnect
-                // so brief host disconnects don't nuke an active game
+                // When guest joins, replace the lobby-cleanup onDisconnect
+                // with a targeted one so brief host disconnects don't nuke the game
                 if self.role == .host && !self.guestJoined && data.guestId != nil {
                     ref.cancelDisconnectOperations()
+                    ref.child("hostId").onDisconnectRemoveValue()
+                    ref.child("hostName").onDisconnectRemoveValue()
+                    ref.child("hostMove").onDisconnectRemoveValue()
                 }
 
                 if self.role == .host && self.guestJoined && data.guestId == nil {
+                    self.opponentDisconnected = true
+                }
+                if self.role == .guest && self.guestJoined && data.hostId.isEmpty {
                     self.opponentDisconnected = true
                 }
                 if data.guestId != nil {
@@ -161,7 +172,21 @@ final class GameSession {
             Database.database().reference(withPath: ".info/connected").removeObserver(withHandle: handle)
         }
         if role == .host {
-            gameRef?.removeValue()
+            if guestJoined {
+                gameRef?.updateChildValues([
+                    "hostId": NSNull(),
+                    "hostName": NSNull(),
+                    "hostMove": NSNull()
+                ])
+            } else {
+                gameRef?.removeValue()
+            }
+        } else {
+            gameRef?.updateChildValues([
+                "guestId": NSNull(),
+                "guestName": NSNull(),
+                "guestMove": NSNull()
+            ])
         }
         gameRef = nil
         observerHandle = nil

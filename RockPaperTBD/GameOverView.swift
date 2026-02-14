@@ -2,11 +2,15 @@ import SwiftUI
 
 struct GameOverView: View {
     let winner: RoundResult
+    let player1Name: String
+    let player2Name: String
     let player1Score: Int
     let player2Score: Int
     let totalRounds: Int
     var opponentId: String? = nil
     var friendsManager: FriendsManager? = nil
+    var sound: SoundManager? = nil
+    var didLose: Bool = false
     let onPlayAgain: () -> Void
 
     @State private var appeared = false
@@ -17,8 +21,8 @@ struct GameOverView: View {
 
     private var winnerLabel: String {
         switch winner {
-        case .player1Wins: return "Player 1"
-        case .player2Wins: return "Player 2"
+        case .player1Wins: return player1Name
+        case .player2Wins: return player2Name
         case .tie: return ""
         }
     }
@@ -57,9 +61,10 @@ struct GameOverView: View {
 
                 HStack(spacing: 40) {
                     VStack(spacing: 4) {
-                        Text("P1")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                        Text(player1Name)
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
                             .foregroundStyle(.white.opacity(0.6))
+                            .lineLimit(1)
                         Text("\(player1Score)")
                             .font(.system(size: 48, weight: .black, design: .rounded))
                             .foregroundStyle(.white)
@@ -70,9 +75,10 @@ struct GameOverView: View {
                         .foregroundStyle(.white.opacity(0.4))
 
                     VStack(spacing: 4) {
-                        Text("P2")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                        Text(player2Name)
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
                             .foregroundStyle(.white.opacity(0.6))
+                            .lineLimit(1)
                         Text("\(player2Score)")
                             .font(.system(size: 48, weight: .black, design: .rounded))
                             .foregroundStyle(.white)
@@ -165,6 +171,11 @@ struct GameOverView: View {
             }
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2)) {
                 appeared = true
+            }
+            if didLose {
+                sound?.playLose()
+            } else {
+                sound?.playWin()
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 confettiParticles = (0..<60).map { _ in ConfettiParticle() }
