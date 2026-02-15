@@ -69,3 +69,12 @@ enum PlayerRole {
     case host
     case guest
 }
+
+enum GameConfig {
+    static let bestOfOptions: [(label: String, value: Int)] = [
+        ("Best of 3", 3),
+        ("Best of 5", 5),
+        ("Best of 7", 7),
+        ("Endless", 0),
+    ]
+}

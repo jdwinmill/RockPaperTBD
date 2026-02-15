@@ -45,11 +45,7 @@ struct DisplayNameView: View {
                     )
                     .padding(.horizontal, 40)
                     .opacity(appeared ? 1 : 0)
-                    .onChange(of: name) { _, newValue in
-                        if newValue.count > 16 {
-                            name = String(newValue.prefix(16))
-                        }
-                    }
+                    .characterLimit(16, text: $name)
 
                 Spacer()
 

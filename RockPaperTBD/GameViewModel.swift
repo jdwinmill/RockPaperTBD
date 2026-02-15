@@ -14,8 +14,9 @@ final class GameViewModel {
     var showDisconnectAlert: Bool = false
 
     // Online
-    var session: GameSession?
+    var session: (any GameSessionProtocol)?
     var isOnline: Bool { session != nil }
+    var makeSession: () -> any GameSessionProtocol = { GameSession() }
 
     var opponentId: String? {
         guard let data = session?.gameData else { return nil }
@@ -60,7 +61,11 @@ final class GameViewModel {
         }
     }
 
-    let sound = SoundManager()
+    let sound: any SoundPlayable
+
+    init(sound: any SoundPlayable = SoundManager()) {
+        self.sound = sound
+    }
 
     // MARK: - Local Mode
 
@@ -85,40 +90,19 @@ final class GameViewModel {
             gameState = .gameOver
             return
         }
-        let wasTie = roundResult == .tie
-        player1Choice = nil
-        player2Choice = nil
-        roundResult = nil
-        flavorText = nil
-        if !wasTie {
-            currentRound += 1
-        }
+        advanceToNextRound()
         gameState = .player1Select
     }
 
     func resetGame() {
         session?.cleanup()
         session = nil
-        player1Choice = nil
-        player2Choice = nil
-        player1Score = 0
-        player2Score = 0
-        currentRound = 1
-        roundResult = nil
-        flavorText = nil
-        bestOf = 0
+        clearGameState()
         gameState = .modeSelect
     }
 
     func resetToStart() {
-        player1Choice = nil
-        player2Choice = nil
-        player1Score = 0
-        player2Score = 0
-        currentRound = 1
-        roundResult = nil
-        flavorText = nil
-        bestOf = 0
+        clearGameState()
         gameState = .start
     }
 
@@ -127,6 +111,12 @@ final class GameViewModel {
     }
 
     func startGame(bestOf: Int) {
+        clearGameState()
+        self.bestOf = bestOf
+        gameState = .player1Select
+    }
+
+    private func clearGameState() {
         player1Choice = nil
         player2Choice = nil
         player1Score = 0
@@ -134,23 +124,27 @@ final class GameViewModel {
         currentRound = 1
         roundResult = nil
         flavorText = nil
-        self.bestOf = bestOf
-        gameState = .player1Select
+        bestOf = 0
+    }
+
+    private func advanceToNextRound() {
+        let wasTie = roundResult == .tie
+        player1Choice = nil
+        player2Choice = nil
+        roundResult = nil
+        flavorText = nil
+        if !wasTie {
+            currentRound += 1
+        }
     }
 
     // MARK: - Online Mode
 
     func hostGame(bestOf: Int, onCreated: (() -> Void)? = nil) {
-        let session = GameSession()
+        let session = makeSession()
         self.session = session
+        clearGameState()
         self.bestOf = bestOf
-        player1Score = 0
-        player2Score = 0
-        currentRound = 1
-        player1Choice = nil
-        player2Choice = nil
-        roundResult = nil
-        flavorText = nil
         session.onCreated = onCreated
         session.createGame(bestOf: bestOf)
         session.onUpdate = { [weak self] in self?.handleSessionUpdate() }
@@ -158,7 +152,7 @@ final class GameViewModel {
     }
 
     func joinGame(code: String, completion: @escaping (Bool, String?) -> Void) {
-        let session = GameSession()
+        let session = makeSession()
         self.session = session
         session.joinGame(code: code) { [weak self] success in
             guard let self else { return }
@@ -197,14 +191,7 @@ final class GameViewModel {
             return
         }
         guard session?.role == .host else { return }
-        let wasTie = roundResult == .tie
-        player1Choice = nil
-        player2Choice = nil
-        roundResult = nil
-        flavorText = nil
-        if !wasTie {
-            currentRound += 1
-        }
+        advanceToNextRound()
         session?.clearRound(currentRound: currentRound)
         gameState = .onlineSelect
     }

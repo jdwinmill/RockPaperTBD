@@ -9,7 +9,7 @@ struct GameOverView: View {
     let totalRounds: Int
     var opponentId: String? = nil
     var friendsManager: FriendsManager? = nil
-    var sound: SoundManager? = nil
+    var sound: (any SoundPlayable)? = nil
     var didLose: Bool = false
     let onPlayAgain: () -> Void
 

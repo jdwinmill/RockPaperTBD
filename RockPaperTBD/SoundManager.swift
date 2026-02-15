@@ -2,7 +2,7 @@ import AVFoundation
 import UIKit
 
 @Observable
-final class SoundManager {
+final class SoundManager: SoundPlayable {
     private let impactLight = UIImpactFeedbackGenerator(style: .light)
     private let impactMedium = UIImpactFeedbackGenerator(style: .medium)
     private let impactHeavy = UIImpactFeedbackGenerator(style: .heavy)

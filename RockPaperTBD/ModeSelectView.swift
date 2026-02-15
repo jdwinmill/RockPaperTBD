@@ -14,12 +14,7 @@ struct ModeSelectView: View {
     @State private var selectedBestOf: Int = 3
     @State private var showFriends = false
 
-    private let bestOfOptions: [(label: String, value: Int)] = [
-        ("Best of 3", 3),
-        ("Best of 5", 5),
-        ("Best of 7", 7),
-        ("Endless", 0),
-    ]
+    private let bestOfOptions = GameConfig.bestOfOptions
 
     var body: some View {
         ZStack {

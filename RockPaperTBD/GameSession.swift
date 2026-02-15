@@ -2,7 +2,7 @@ import Foundation
 import FirebaseDatabase
 
 @Observable
-final class GameSession {
+final class GameSession: GameSessionProtocol {
     var gameData: OnlineGameData?
     var roomCode: String = ""
     var role: PlayerRole = .host
@@ -26,7 +26,7 @@ final class GameSession {
 
     private func attemptCreateGame(bestOf: Int, retriesLeft: Int) {
         let code = RoomCode.generate()
-        let ref = Database.database().reference().child("games").child(code)
+        let ref = Database.database().reference().child(FirebasePath.games).child(code)
 
         ref.observeSingleEvent(of: .value) { [weak self] snapshot in
             DispatchQueue.main.async {
@@ -62,7 +62,7 @@ final class GameSession {
         roomCode = upperCode
         role = .guest
 
-        let ref = Database.database().reference().child("games").child(upperCode)
+        let ref = Database.database().reference().child(FirebasePath.games).child(upperCode)
         gameRef = ref
 
         ref.observeSingleEvent(of: .value) { [weak self] snapshot in

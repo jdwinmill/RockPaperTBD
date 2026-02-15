@@ -36,11 +36,7 @@ struct AddFriendView: View {
                         )
                 )
                 .padding(.horizontal, 20)
-                .onChange(of: code) { _, newValue in
-                    if newValue.count > 6 {
-                        code = String(newValue.prefix(6))
-                    }
-                }
+                .characterLimit(6, text: $code)
 
             if let error {
                 Text(error)

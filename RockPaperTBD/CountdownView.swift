@@ -2,7 +2,7 @@ import SwiftUI
 
 struct CountdownView: View {
     let onFinished: () -> Void
-    let sound: SoundManager
+    let sound: any SoundPlayable
 
     @State private var currentNumber: Int = 3
     @State private var showThrow: Bool = false

@@ -35,30 +35,24 @@ struct GameInvite: Identifiable {
 }
 
 enum FriendCode {
-    private static let characters = Array("ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
-
     static func generate() -> String {
-        String((0..<6).map { _ in characters.randomElement()! })
+        CodeCharset.generate(length: 6)
     }
 }
 
 enum DisplayName {
-    private static let key = "playerDisplayName"
-
     static var saved: String? {
-        UserDefaults.standard.string(forKey: key)
+        UserDefaults.standard.string(forKey: StorageKey.playerDisplayName)
     }
 
     static func save(_ name: String) {
-        UserDefaults.standard.set(name, forKey: key)
+        UserDefaults.standard.set(name, forKey: StorageKey.playerDisplayName)
     }
 }
 
 enum ProfileCache {
-    private static let codeKey = "cachedFriendCode"
-
     static var friendCode: String? {
-        get { UserDefaults.standard.string(forKey: codeKey) }
-        set { UserDefaults.standard.set(newValue, forKey: codeKey) }
+        get { UserDefaults.standard.string(forKey: StorageKey.cachedFriendCode) }
+        set { UserDefaults.standard.set(newValue, forKey: StorageKey.cachedFriendCode) }
     }
 }

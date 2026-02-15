@@ -61,12 +61,7 @@ struct StartView: View {
     @State private var titleScale: CGFloat = 0.8
     @State private var selectedBestOf: Int = 3
 
-    private let bestOfOptions: [(label: String, value: Int)] = [
-        ("Best of 3", 3),
-        ("Best of 5", 5),
-        ("Best of 7", 7),
-        ("Endless", 0),
-    ]
+    private let bestOfOptions = GameConfig.bestOfOptions
 
     var body: some View {
         ZStack {

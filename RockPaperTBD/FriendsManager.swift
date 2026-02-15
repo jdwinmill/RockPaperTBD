@@ -25,7 +25,7 @@ final class FriendsManager {
     // MARK: - Profile
 
     func ensureProfile(displayName: String) {
-        let playerRef = db.child("players").child(myId)
+        let playerRef = db.child(FirebasePath.players).child(myId)
         playerRef.observeSingleEvent(of: .value, with: { [weak self] snapshot in
             DispatchQueue.main.async {
                 guard let self else { return }
@@ -57,7 +57,7 @@ final class FriendsManager {
 
     private func createProfile(displayName: String) {
         let code = FriendCode.generate()
-        let indexRef = db.child("friendCodeIndex").child(code)
+        let indexRef = db.child(FirebasePath.friendCodeIndex).child(code)
 
         // Check code uniqueness
         indexRef.observeSingleEvent(of: .value, with: { [weak self] snapshot in
@@ -86,8 +86,8 @@ final class FriendsManager {
         ]
 
         let updates: [String: Any] = [
-            "players/\(myId)": profileData,
-            "friendCodeIndex/\(code)/playerId": myId
+            "\(FirebasePath.players)/\(myId)": profileData,
+            "\(FirebasePath.friendCodeIndex)/\(code)/playerId": myId
         ]
 
         db.updateChildValues(updates)
@@ -104,7 +104,7 @@ final class FriendsManager {
 
     func sendFriendRequest(friendCode: String, completion: @escaping (Bool, String?) -> Void) {
         let upperCode = friendCode.uppercased()
-        db.child("friendCodeIndex").child(upperCode).child("playerId")
+        db.child(FirebasePath.friendCodeIndex).child(upperCode).child("playerId")
             .observeSingleEvent(of: .value, with: { [weak self] snapshot in
                 DispatchQueue.main.async {
                     guard let self else { return }
@@ -140,7 +140,7 @@ final class FriendsManager {
             "senderName": profile?.displayName ?? DisplayName.saved ?? "Player",
             "timestamp": ServerValue.timestamp()
         ]
-        db.child("friendRequests").child(targetId).child(myId).setValue(requestData) { error, _ in
+        db.child(FirebasePath.friendRequests).child(targetId).child(myId).setValue(requestData) { error, _ in
             DispatchQueue.main.async {
                 if let error {
                     completion(false, error.localizedDescription)
@@ -156,24 +156,24 @@ final class FriendsManager {
         let now = ServerValue.timestamp()
 
         let updates: [String: Any] = [
-            "friends/\(myId)/\(request.senderId)/displayName": request.senderName,
-            "friends/\(myId)/\(request.senderId)/addedAt": now,
-            "friends/\(request.senderId)/\(myId)/displayName": myName,
-            "friends/\(request.senderId)/\(myId)/addedAt": now,
-            "friendRequests/\(myId)/\(request.senderId)": NSNull()
+            "\(FirebasePath.friends)/\(myId)/\(request.senderId)/displayName": request.senderName,
+            "\(FirebasePath.friends)/\(myId)/\(request.senderId)/addedAt": now,
+            "\(FirebasePath.friends)/\(request.senderId)/\(myId)/displayName": myName,
+            "\(FirebasePath.friends)/\(request.senderId)/\(myId)/addedAt": now,
+            "\(FirebasePath.friendRequests)/\(myId)/\(request.senderId)": NSNull()
         ]
 
         db.updateChildValues(updates)
     }
 
     func declineRequest(_ request: FriendRequest) {
-        db.child("friendRequests").child(myId).child(request.senderId).removeValue()
+        db.child(FirebasePath.friendRequests).child(myId).child(request.senderId).removeValue()
     }
 
     func removeFriend(_ friend: FriendData) {
         let updates: [String: Any] = [
-            "friends/\(myId)/\(friend.playerId)": NSNull(),
-            "friends/\(friend.playerId)/\(myId)": NSNull()
+            "\(FirebasePath.friends)/\(myId)/\(friend.playerId)": NSNull(),
+            "\(FirebasePath.friends)/\(friend.playerId)/\(myId)": NSNull()
         ]
         db.updateChildValues(updates)
     }
@@ -187,23 +187,23 @@ final class FriendsManager {
             "senderName": profile?.displayName ?? DisplayName.saved ?? "Player",
             "timestamp": ServerValue.timestamp()
         ]
-        let ref = db.child("invites").child(friendId).child(myId)
+        let ref = db.child(FirebasePath.invites).child(friendId).child(myId)
         ref.setValue(inviteData)
         ref.onDisconnectRemoveValue()
     }
 
     func clearInvite(from senderId: String) {
-        db.child("invites").child(myId).child(senderId).removeValue()
+        db.child(FirebasePath.invites).child(myId).child(senderId).removeValue()
     }
 
     func clearMyOutgoingInvite(to friendId: String) {
-        db.child("invites").child(friendId).child(myId).removeValue()
+        db.child(FirebasePath.invites).child(friendId).child(myId).removeValue()
     }
 
     // MARK: - Observers
 
     func observeFriends() {
-        let ref = db.child("friends").child(myId)
+        let ref = db.child(FirebasePath.friends).child(myId)
         friendsHandle = ref.observe(.value) { [weak self] snapshot in
             let value = snapshot.value
             DispatchQueue.main.async {
@@ -225,7 +225,7 @@ final class FriendsManager {
     }
 
     func observeRequests() {
-        let ref = db.child("friendRequests").child(myId)
+        let ref = db.child(FirebasePath.friendRequests).child(myId)
         requestsHandle = ref.observe(.value) { [weak self] snapshot in
             let value = snapshot.value
             DispatchQueue.main.async {
@@ -247,7 +247,7 @@ final class FriendsManager {
     }
 
     func observeInvites() {
-        let ref = db.child("invites").child(myId)
+        let ref = db.child(FirebasePath.invites).child(myId)
         invitesHandle = ref.observe(.value) { [weak self] snapshot in
             let value = snapshot.value
             DispatchQueue.main.async {
@@ -269,7 +269,7 @@ final class FriendsManager {
                     )
                     if invite.isStale {
                         // Fix 4: clean up stale invites from Firebase
-                        self.db.child("invites").child(self.myId).child(key).removeValue()
+                        self.db.child(FirebasePath.invites).child(self.myId).child(key).removeValue()
                     } else {
                         freshInvites.append(invite)
                     }
@@ -281,15 +281,15 @@ final class FriendsManager {
 
     func stopObserving() {
         if let handle = friendsHandle {
-            db.child("friends").child(myId).removeObserver(withHandle: handle)
+            db.child(FirebasePath.friends).child(myId).removeObserver(withHandle: handle)
             friendsHandle = nil
         }
         if let handle = requestsHandle {
-            db.child("friendRequests").child(myId).removeObserver(withHandle: handle)
+            db.child(FirebasePath.friendRequests).child(myId).removeObserver(withHandle: handle)
             requestsHandle = nil
         }
         if let handle = invitesHandle {
-            db.child("invites").child(myId).removeObserver(withHandle: handle)
+            db.child(FirebasePath.invites).child(myId).removeObserver(withHandle: handle)
             invitesHandle = nil
         }
     }

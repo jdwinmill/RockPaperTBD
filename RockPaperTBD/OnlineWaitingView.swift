@@ -5,7 +5,6 @@ struct OnlineWaitingView: View {
 
     @State private var pulseScale: CGFloat = 1.0
     @State private var appeared = false
-    @State private var dotPulse = false
 
     var body: some View {
         ZStack {
@@ -30,20 +29,7 @@ struct OnlineWaitingView: View {
 
                 Spacer()
 
-                HStack(spacing: 8) {
-                    ForEach(0..<3, id: \.self) { i in
-                        Circle()
-                            .fill(.white.opacity(0.6))
-                            .frame(width: 10, height: 10)
-                            .scaleEffect(dotPulse ? 1.3 : 0.7)
-                            .animation(
-                                .easeInOut(duration: 0.6)
-                                .repeatForever(autoreverses: true)
-                                .delay(Double(i) * 0.2),
-                                value: dotPulse
-                            )
-                    }
-                }
+                PulsingDotsView()
 
                 Text("Waiting for opponent...")
                     .font(.system(size: 20, weight: .medium, design: .rounded))
@@ -61,7 +47,6 @@ struct OnlineWaitingView: View {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                 appeared = true
             }
-            dotPulse = true
         }
     }
 }

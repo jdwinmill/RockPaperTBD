@@ -49,11 +49,7 @@ struct JoinGameView: View {
                     )
                     .padding(.horizontal, 40)
                     .opacity(appeared ? 1 : 0)
-                    .onChange(of: code) { _, newValue in
-                        if newValue.count > 4 {
-                            code = String(newValue.prefix(4))
-                        }
-                    }
+                    .characterLimit(4, text: $code)
 
                 if let error {
                     Text(error)

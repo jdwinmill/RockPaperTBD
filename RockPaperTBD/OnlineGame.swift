@@ -1,5 +1,19 @@
 import Foundation
 
+enum CodeCharset {
+    static let characters = Array("ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
+
+    static func generate(length: Int) -> String {
+        String((0..<length).map { _ in characters.randomElement()! })
+    }
+}
+
+enum StorageKey {
+    static let devicePlayerId = "devicePlayerId"
+    static let playerDisplayName = "playerDisplayName"
+    static let cachedFriendCode = "cachedFriendCode"
+}
+
 struct OnlineGameData {
     var hostId: String
     var guestId: String?
@@ -17,22 +31,18 @@ struct OnlineGameData {
 }
 
 enum PlayerIdentity {
-    private static let key = "devicePlayerId"
-
     static var id: String {
-        if let existing = UserDefaults.standard.string(forKey: key) {
+        if let existing = UserDefaults.standard.string(forKey: StorageKey.devicePlayerId) {
             return existing
         }
         let newId = UUID().uuidString
-        UserDefaults.standard.set(newId, forKey: key)
+        UserDefaults.standard.set(newId, forKey: StorageKey.devicePlayerId)
         return newId
     }
 }
 
 enum RoomCode {
-    private static let characters = Array("ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
-
     static func generate() -> String {
-        String((0..<4).map { _ in characters.randomElement()! })
+        CodeCharset.generate(length: 4)
     }
 }

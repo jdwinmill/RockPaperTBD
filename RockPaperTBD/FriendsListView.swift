@@ -8,7 +8,6 @@ struct FriendsListView: View {
     @State private var showAddFriend = false
     @State private var needsName = false
     @State private var nameText = ""
-    @State private var copied = false
 
     private var hasProfile: Bool { friendsManager.profile != nil }
 
@@ -113,11 +112,7 @@ struct FriendsListView: View {
                         )
                 )
                 .padding(.horizontal, 40)
-                .onChange(of: nameText) { _, newValue in
-                    if newValue.count > 16 {
-                        nameText = String(newValue.prefix(16))
-                    }
-                }
+                .characterLimit(16, text: $nameText)
 
             Spacer()
 
@@ -164,26 +159,11 @@ struct FriendsListView: View {
                 .foregroundStyle(.white.opacity(0.4))
 
             if let code = friendsManager.profile?.friendCode {
-                Button {
-                    UIPasteboard.general.string = code
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                        copied = true
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        withAnimation { copied = false }
-                    }
-                } label: {
-                    VStack(spacing: 6) {
-                        Text(code)
-                            .font(.system(size: 40, weight: .black, design: .monospaced))
-                            .foregroundStyle(.white)
-                            .tracking(6)
-                        Text(copied ? "Copied!" : "Tap to copy")
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.4))
-                    }
-                }
-                .buttonStyle(.plain)
+                CopyableCodeView(
+                    code: code,
+                    font: .system(size: 40, weight: .black, design: .monospaced),
+                    tracking: 6
+                )
             } else {
                 ProgressView()
                     .tint(.white)
