@@ -8,6 +8,7 @@ struct PlayerSelectView: View {
     var isOnline: Bool = false
     var player2Label: String = "P2"
     var isVsComputer: Bool = false
+    var characterManager: CharacterManager?
     let onSelect: (Move) -> Void
 
     @State private var appeared = false
@@ -75,7 +76,8 @@ struct PlayerSelectView: View {
     }
 
     private func gestureButton(_ move: Move) -> some View {
-        Button {
+        let display = move.display(using: characterManager)
+        return Button {
             guard tappedMove == nil else { return }
             tappedMove = move
             withAnimation(.spring(response: 0.2, dampingFraction: 0.5)) {}
@@ -84,9 +86,9 @@ struct PlayerSelectView: View {
             }
         } label: {
             VStack(spacing: 10) {
-                Text(move.emoji)
+                Text(display.emoji)
                     .font(.system(size: 48))
-                Text(move.name)
+                Text(display.name)
                     .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
             }

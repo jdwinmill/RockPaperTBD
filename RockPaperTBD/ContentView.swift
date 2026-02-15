@@ -3,6 +3,8 @@ import SwiftUI
 struct ContentView: View {
     @State private var game = GameViewModel()
     @State private var friendsManager = FriendsManager()
+    @State private var characterManager = CharacterManager()
+    @State private var storeManager = StoreManager()
     @State private var pendingInviteFriendId: String?
     @State private var showInviteError = false
 
@@ -15,6 +17,8 @@ struct ContentView: View {
                     onCreateGame: { bestOf, battleMode in game.hostGame(bestOf: bestOf, tapBattleMode: battleMode) },
                     onJoinGame: { game.gameState = .joinGame },
                     friendsManager: friendsManager,
+                    characterManager: characterManager,
+                    storeManager: storeManager,
                     onAcceptInvite: { invite in acceptInvite(invite) },
                     onInviteFriend: { friendId, bestOf, battleMode in inviteFriend(friendId, bestOf: bestOf, tapBattleMode: battleMode) }
                 )
@@ -57,6 +61,7 @@ struct ContentView: View {
                     player2Score: game.player2Score,
                     player2Label: game.isVsComputer ? "CPU" : "P2",
                     isVsComputer: game.isVsComputer,
+                    characterManager: characterManager,
                     onSelect: { move in
                         game.selectGesture(move)
                     }
@@ -74,6 +79,7 @@ struct ContentView: View {
                     player1Score: game.player1Score,
                     player2Score: game.player2Score,
                     isOnline: true,
+                    characterManager: game.session?.role == .host ? characterManager : nil,
                     onSelect: { move in game.submitOnlineMove(move) }
                 )
                 .transition(.asymmetric(
@@ -109,6 +115,7 @@ struct ContentView: View {
                         localTapCount: game.isVsComputer ? game.player1Taps : (game.session?.role == .host ? game.player1Taps : game.player2Taps),
                         battleType: game.battleType,
                         isVsComputer: game.isVsComputer,
+                        characterManager: characterManager,
                         onTap: { game.registerTap() },
                         onTimerEnd: { game.submitTapCount() }
                     )
@@ -130,6 +137,7 @@ struct ContentView: View {
                         flavorText: game.flavorText,
                         isMatchOver: game.isMatchOver,
                         isOnlineGuest: game.isOnline && game.session?.role == .guest,
+                        characterManager: characterManager,
                         onNextRound: {
                             if game.isOnline {
                                 game.onlineNextRound()
@@ -195,6 +203,7 @@ struct ContentView: View {
             friendsManager.observeFriends()
             friendsManager.observeRequests()
             friendsManager.observeInvites()
+            game.characterManager = characterManager
             // Eagerly load profile if name already saved
             if let name = DisplayName.saved {
                 friendsManager.ensureProfile(displayName: name)

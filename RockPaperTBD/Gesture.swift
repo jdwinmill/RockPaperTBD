@@ -1,6 +1,6 @@
 import Foundation
 
-enum Move: String, CaseIterable {
+enum Move: String, CaseIterable, Codable {
     case rock
     case paper
     case scissors
@@ -33,6 +33,19 @@ enum Move: String, CaseIterable {
         case (.scissors, .paper): return "Scissors cuts Paper!"
         default: return nil
         }
+    }
+
+    func display(using manager: CharacterManager?) -> (emoji: String, name: String) {
+        guard let manager else { return (emoji, name) }
+        return manager.display(for: self)
+    }
+
+    func flavorText(against other: Move, myCharacter: GameCharacter?, opponentCharacter: GameCharacter?) -> String? {
+        guard let mine = myCharacter, let theirs = opponentCharacter else {
+            return flavorText(against: other)
+        }
+        guard self.beats(other) else { return nil }
+        return "\(mine.name) defeats \(theirs.name)!"
     }
 }
 

@@ -12,6 +12,7 @@ struct RevealView: View {
     let flavorText: String?
     let isMatchOver: Bool
     var isOnlineGuest: Bool = false
+    var characterManager: CharacterManager?
     let onNextRound: () -> Void
     let onReset: () -> Void
 
@@ -89,6 +90,10 @@ struct RevealView: View {
         }
     }
 
+    private var p1Display: (emoji: String, name: String) {
+        player1Choice.display(using: characterManager)
+    }
+
     private var gestureRevealSection: some View {
         HStack(spacing: 24) {
             VStack(spacing: 12) {
@@ -97,12 +102,12 @@ struct RevealView: View {
                     .foregroundStyle(.white.opacity(0.7))
                     .lineLimit(1)
 
-                Text(player1Choice.emoji)
+                Text(p1Display.emoji)
                     .font(.system(size: 80))
                     .scaleEffect(gesture1Scale)
                     .rotationEffect(.degrees(gesture1Rotation))
 
-                Text(player1Choice.name)
+                Text(p1Display.name)
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
             }

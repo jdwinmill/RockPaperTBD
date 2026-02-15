@@ -647,3 +647,244 @@ struct GameViewModelSoundTests {
         #expect(sound.loseCount == 1)
     }
 }
+
+// MARK: - CharacterCatalog Tests
+
+struct CharacterCatalogTests {
+    @Test func defaultsHaveThreeCharacters() {
+        #expect(CharacterCatalog.defaults.count == 3)
+    }
+
+    @Test func allCharactersHasTwelve() {
+        #expect(CharacterCatalog.allCharacters.count == 12)
+    }
+
+    @Test func allPacksHasThree() {
+        #expect(CharacterCatalog.allPacks.count == 3)
+    }
+
+    @Test func eachPackHasThreeCharacters() {
+        for pack in CharacterCatalog.allPacks {
+            #expect(pack.characters.count == 3)
+        }
+    }
+
+    @Test func eachPackCoversAllSlots() {
+        for pack in CharacterCatalog.allPacks {
+            let slots = Set(pack.characters.map(\.slot))
+            #expect(slots == Set(Move.allCases))
+        }
+    }
+
+    @Test func defaultsAreUnlocked() {
+        for character in CharacterCatalog.defaults {
+            #expect(character.packId == nil)
+        }
+    }
+
+    @Test func premiumCharactersHavePackId() {
+        let premium = CharacterCatalog.allCharacters.filter { $0.packId != nil }
+        #expect(premium.count == 9)
+    }
+
+    @Test func lookupByIdWorks() {
+        let rock = CharacterCatalog.character(byId: "default.rock")
+        #expect(rock != nil)
+        #expect(rock?.slot == .rock)
+        #expect(rock?.emoji == "\u{1FAA8}")
+    }
+
+    @Test func lookupByIdReturnsNilForInvalid() {
+        #expect(CharacterCatalog.character(byId: "nonexistent") == nil)
+    }
+
+    @Test func filterBySlotReturnsCorrectCount() {
+        for slot in Move.allCases {
+            let chars = CharacterCatalog.characters(for: slot)
+            #expect(chars.count == 4) // 1 default + 3 premium
+            for char in chars {
+                #expect(char.slot == slot)
+            }
+        }
+    }
+
+    @Test func allIdsAreUnique() {
+        let ids = CharacterCatalog.allCharacters.map(\.id)
+        #expect(Set(ids).count == ids.count)
+    }
+
+    @Test func allProductIdsAreUnique() {
+        let productIds = CharacterCatalog.allPacks.map(\.productId)
+        #expect(Set(productIds).count == productIds.count)
+    }
+
+    @Test func defaultLoadoutUsesDefaults() {
+        let loadout = CharacterCatalog.defaultLoadout
+        #expect(loadout.rockId == "default.rock")
+        #expect(loadout.paperId == "default.paper")
+        #expect(loadout.scissorsId == "default.scissors")
+    }
+}
+
+// MARK: - CharacterLoadout Tests
+
+struct CharacterLoadoutTests {
+    @Test func getCharacterId() {
+        let loadout = CharacterLoadout(
+            rockId: "samurai.rock",
+            paperId: "default.paper",
+            scissorsId: "space.scissors"
+        )
+        #expect(loadout.characterId(for: .rock) == "samurai.rock")
+        #expect(loadout.characterId(for: .paper) == "default.paper")
+        #expect(loadout.characterId(for: .scissors) == "space.scissors")
+    }
+
+    @Test func setCharacterId() {
+        var loadout = CharacterCatalog.defaultLoadout
+        loadout.setCharacter("animals.rock", for: .rock)
+        #expect(loadout.rockId == "animals.rock")
+        #expect(loadout.paperId == "default.paper") // unchanged
+    }
+
+    @Test func codable() throws {
+        let original = CharacterLoadout(
+            rockId: "samurai.rock",
+            paperId: "space.paper",
+            scissorsId: "animals.scissors"
+        )
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(CharacterLoadout.self, from: data)
+        #expect(decoded.rockId == original.rockId)
+        #expect(decoded.paperId == original.paperId)
+        #expect(decoded.scissorsId == original.scissorsId)
+    }
+}
+
+// MARK: - CharacterManager Tests
+
+@MainActor
+struct CharacterManagerTests {
+    private func cleanManager() -> CharacterManager {
+        UserDefaults.standard.removeObject(forKey: "characterLoadout")
+        UserDefaults.standard.removeObject(forKey: "purchasedPacks")
+        return CharacterManager()
+    }
+
+    @Test func defaultLoadoutReturnsDefaults() {
+        let manager = cleanManager()
+        let rock = manager.character(for: .rock)
+        #expect(rock.id == "default.rock")
+        let paper = manager.character(for: .paper)
+        #expect(paper.id == "default.paper")
+        let scissors = manager.character(for: .scissors)
+        #expect(scissors.id == "default.scissors")
+    }
+
+    @Test func availableCharactersWithNoPurchases() {
+        let manager = cleanManager()
+        let available = manager.availableCharacters(for: .rock)
+        #expect(available.count == 1) // only default
+        #expect(available[0].id == "default.rock")
+    }
+
+    @Test func unlockPackExpandsAvailable() {
+        let manager = cleanManager()
+        manager.unlockPack("samurai")
+        let available = manager.availableCharacters(for: .rock)
+        #expect(available.count == 2) // default + samurai
+        #expect(available.contains { $0.id == "samurai.rock" })
+    }
+
+    @Test func selectCharacterUpdatesLoadout() {
+        let manager = cleanManager()
+        manager.unlockPack("samurai")
+        let katana = CharacterCatalog.samuraiRock
+        manager.selectCharacter(katana, for: .rock)
+        #expect(manager.character(for: .rock).id == "samurai.rock")
+    }
+
+    @Test func isPurchasedTracking() {
+        let manager = cleanManager()
+        #expect(!manager.isPurchased(packId: "space"))
+        manager.unlockPack("space")
+        #expect(manager.isPurchased(packId: "space"))
+    }
+
+    @Test func displayHelper() {
+        let manager = cleanManager()
+        let display = manager.display(for: .rock)
+        #expect(display.emoji == "\u{1FAA8}")
+        #expect(display.name == "Rock")
+    }
+
+    @Test func displayHelperWithCustomCharacter() {
+        let manager = cleanManager()
+        manager.unlockPack("samurai")
+        manager.selectCharacter(CharacterCatalog.samuraiRock, for: .rock)
+        let display = manager.display(for: .rock)
+        #expect(display.emoji == "\u{2694}\u{FE0F}")
+        #expect(display.name == "Katana")
+    }
+}
+
+// MARK: - Move Character Extension Tests
+
+struct MoveCharacterExtensionTests {
+    @Test func displayWithNilManagerReturnsDefault() {
+        let display = Move.rock.display(using: nil)
+        #expect(display.emoji == Move.rock.emoji)
+        #expect(display.name == Move.rock.name)
+    }
+
+    @Test @MainActor func displayWithManagerReturnsCharacter() {
+        UserDefaults.standard.removeObject(forKey: "characterLoadout")
+        UserDefaults.standard.removeObject(forKey: "purchasedPacks")
+        let manager = CharacterManager()
+        manager.unlockPack("samurai")
+        manager.selectCharacter(CharacterCatalog.samuraiRock, for: .rock)
+        let display = Move.rock.display(using: manager)
+        #expect(display.emoji == "\u{2694}\u{FE0F}")
+        #expect(display.name == "Katana")
+    }
+
+    @Test func characterAwareFlavorTextFallsBackWhenNil() {
+        let text = Move.rock.flavorText(against: .scissors, myCharacter: nil, opponentCharacter: nil)
+        #expect(text == "Rock crushes Scissors!")
+    }
+
+    @Test func characterAwareFlavorTextUsesNames() {
+        let mine = CharacterCatalog.samuraiRock
+        let theirs = CharacterCatalog.defaultScissors
+        let text = Move.rock.flavorText(against: .scissors, myCharacter: mine, opponentCharacter: theirs)
+        #expect(text == "Katana defeats Scissors!")
+    }
+
+    @Test func characterAwareFlavorTextNilForLoss() {
+        let mine = CharacterCatalog.defaultScissors
+        let theirs = CharacterCatalog.defaultRock
+        let text = Move.scissors.flavorText(against: .rock, myCharacter: mine, opponentCharacter: theirs)
+        #expect(text == nil)
+    }
+}
+
+// MARK: - GameCharacter Tests
+
+struct GameCharacterTests {
+    @Test func hashable() {
+        let a = CharacterCatalog.defaultRock
+        let b = CharacterCatalog.defaultRock
+        #expect(a == b)
+        let set: Set<GameCharacter> = [a, b]
+        #expect(set.count == 1)
+    }
+
+    @Test func codable() throws {
+        let original = CharacterCatalog.samuraiRock
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(GameCharacter.self, from: data)
+        #expect(decoded.id == original.id)
+        #expect(decoded.slot == original.slot)
+        #expect(decoded.packId == original.packId)
+    }
+}

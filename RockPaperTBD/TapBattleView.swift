@@ -10,6 +10,7 @@ struct TapBattleView: View {
     let localTapCount: Int
     let battleType: BattleType
     var isVsComputer: Bool = false
+    var characterManager: CharacterManager?
     let onTap: () -> Void
     let onTimerEnd: () -> Void
 
@@ -257,8 +258,9 @@ struct TapBattleView: View {
     }
 
     private func playerSide(choice: Move, name: String, hasAdvantage: Bool, isTie: Bool, isLocal: Bool) -> some View {
-        VStack(spacing: 4) {
-            Text(choice.emoji)
+        let display: (emoji: String, name: String) = isLocal ? choice.display(using: characterManager) : (choice.emoji, choice.name)
+        return VStack(spacing: 4) {
+            Text(display.emoji)
                 .font(.system(size: 40))
 
             Text(name)

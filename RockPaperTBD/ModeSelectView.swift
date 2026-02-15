@@ -5,6 +5,8 @@ struct ModeSelectView: View {
     let onCreateGame: (Int, TapBattleMode) -> Void
     let onJoinGame: () -> Void
     let friendsManager: FriendsManager
+    let characterManager: CharacterManager
+    let storeManager: StoreManager
     let onAcceptInvite: (GameInvite) -> Void
     let onInviteFriend: (String, Int, TapBattleMode) -> Void
 
@@ -14,6 +16,7 @@ struct ModeSelectView: View {
     @State private var selectedBestOf: Int = 3
     @State private var selectedBattleMode: TapBattleMode = .tiesOnly
     @State private var showFriends = false
+    @State private var showLoadout = false
 
     private let bestOfOptions = GameConfig.bestOfOptions
 
@@ -197,6 +200,15 @@ struct ModeSelectView: View {
                         }
                     }
                     .buttonStyle(.plain)
+
+                    Button {
+                        showLoadout = true
+                    } label: {
+                        Text("Customize")
+                            .font(.system(size: 18, weight: .medium, design: .rounded))
+                            .foregroundStyle(Theme.battleAccent)
+                    }
+                    .buttonStyle(.plain)
                 }
                 .opacity(appeared ? 1 : 0)
 
@@ -227,6 +239,12 @@ struct ModeSelectView: View {
                     onInviteFriend(friendId, selectedBestOf, selectedBattleMode)
                 },
                 onDismiss: { showFriends = false }
+            )
+        }
+        .sheet(isPresented: $showLoadout) {
+            LoadoutView(
+                characterManager: characterManager,
+                storeManager: storeManager
             )
         }
     }

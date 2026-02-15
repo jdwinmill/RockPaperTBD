@@ -24,6 +24,9 @@ final class GameViewModel {
     // VS Computer
     var isVsComputer: Bool = false
 
+    // Characters
+    var characterManager: CharacterManager?
+
     // Online
     var session: (any GameSessionProtocol)?
     var isOnline: Bool { session != nil }
@@ -431,6 +434,9 @@ final class GameViewModel {
     private func determineWinner() {
         guard let p1 = player1Choice, let p2 = player2Choice else { return }
 
+        let p1Char = characterManager?.character(for: p1)
+        let p2Char: GameCharacter? = nil  // P2/CPU always shows defaults (no online sync v1)
+
         if p1 == p2 {
             roundResult = .tie
             flavorText = nil
@@ -438,7 +444,7 @@ final class GameViewModel {
         } else if p1.beats(p2) {
             roundResult = .player1Wins
             player1Score += 1
-            flavorText = p1.flavorText(against: p2)
+            flavorText = p1.flavorText(against: p2, myCharacter: p1Char, opponentCharacter: p2Char)
             if isOnline && session?.role == .guest {
                 sound.playLose()
             } else {
@@ -447,7 +453,7 @@ final class GameViewModel {
         } else {
             roundResult = .player2Wins
             player2Score += 1
-            flavorText = p2.flavorText(against: p1)
+            flavorText = p2.flavorText(against: p1, myCharacter: p2Char, opponentCharacter: p1Char)
             if isVsComputer || (isOnline && session?.role == .host) {
                 sound.playLose()
             } else {
