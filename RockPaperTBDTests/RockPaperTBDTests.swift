@@ -375,6 +375,30 @@ struct DisplayNameTests {
     }
 }
 
+// MARK: - PlayerStats Tests
+
+struct PlayerStatsTests {
+    @Test func matchesPlayed() {
+        let stats = PlayerStats(playerId: "a", displayName: "Test", wins: 5, losses: 3)
+        #expect(stats.matchesPlayed == 8)
+    }
+
+    @Test func winPercentage() {
+        let stats = PlayerStats(playerId: "a", displayName: "Test", wins: 3, losses: 1)
+        #expect(stats.winPercentage == 0.75)
+    }
+
+    @Test func winPercentageZeroMatches() {
+        let stats = PlayerStats(playerId: "a", displayName: "Test", wins: 0, losses: 0)
+        #expect(stats.winPercentage == 0)
+    }
+
+    @Test func identifiable() {
+        let stats = PlayerStats(playerId: "abc", displayName: "Test", wins: 0, losses: 0)
+        #expect(stats.id == "abc")
+    }
+}
+
 // MARK: - GameInvite Tests
 
 struct GameInviteTests {

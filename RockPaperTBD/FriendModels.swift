@@ -34,6 +34,19 @@ struct GameInvite: Identifiable {
     }
 }
 
+struct PlayerStats: Identifiable {
+    var id: String { playerId }
+    let playerId: String
+    let displayName: String
+    let wins: Int
+    let losses: Int
+
+    var matchesPlayed: Int { wins + losses }
+    var winPercentage: Double {
+        matchesPlayed == 0 ? 0 : Double(wins) / Double(matchesPlayed)
+    }
+}
+
 enum FriendCode {
     static func generate() -> String {
         CodeCharset.generate(length: 6)

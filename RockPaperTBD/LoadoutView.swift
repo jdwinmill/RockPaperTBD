@@ -76,8 +76,7 @@ struct LoadoutView: View {
                 ForEach(Move.allCases, id: \.self) { slot in
                     let char = characterManager.character(for: slot)
                     VStack(spacing: 6) {
-                        Text(char.emoji)
-                            .font(.system(size: 44))
+                        CharacterDisplayView(imageName: char.imageName, emoji: char.emoji, size: 44)
                         Text(char.name)
                             .font(.system(size: 12, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
@@ -134,8 +133,7 @@ struct LoadoutView: View {
                     characterManager.selectCharacter(character, for: selectedSlot)
                 } label: {
                     VStack(spacing: 8) {
-                        Text(character.emoji)
-                            .font(.system(size: 44))
+                        CharacterDisplayView(imageName: character.imageName, emoji: character.emoji, size: 44)
                         Text(character.name)
                             .font(.system(size: 13, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)

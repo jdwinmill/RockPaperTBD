@@ -258,10 +258,9 @@ struct TapBattleView: View {
     }
 
     private func playerSide(choice: Move, name: String, hasAdvantage: Bool, isTie: Bool, isLocal: Bool) -> some View {
-        let display: (emoji: String, name: String) = isLocal ? choice.display(using: characterManager) : (choice.emoji, choice.name)
+        let display: (emoji: String, name: String, imageName: String?) = isLocal ? choice.display(using: characterManager) : (choice.emoji, choice.name, nil)
         return VStack(spacing: 4) {
-            Text(display.emoji)
-                .font(.system(size: 40))
+            CharacterDisplayView(imageName: display.imageName, emoji: display.emoji, size: 40)
 
             Text(name)
                 .font(.system(size: 12, weight: .bold, design: .rounded))

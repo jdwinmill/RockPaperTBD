@@ -86,8 +86,7 @@ struct PlayerSelectView: View {
             }
         } label: {
             VStack(spacing: 10) {
-                Text(display.emoji)
-                    .font(.system(size: 48))
+                CharacterDisplayView(imageName: display.imageName, emoji: display.emoji, size: 48)
                 Text(display.name)
                     .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)

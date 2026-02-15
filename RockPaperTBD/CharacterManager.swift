@@ -54,9 +54,9 @@ final class CharacterManager {
 
     // MARK: - Display Helpers
 
-    func display(for move: Move) -> (emoji: String, name: String) {
+    func display(for move: Move) -> (emoji: String, name: String, imageName: String?) {
         let char = character(for: move)
-        return (char.emoji, char.name)
+        return (char.emoji, char.name, char.imageName)
     }
 
     // MARK: - Persistence

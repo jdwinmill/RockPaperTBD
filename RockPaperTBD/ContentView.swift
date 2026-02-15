@@ -5,6 +5,7 @@ struct ContentView: View {
     @State private var friendsManager = FriendsManager()
     @State private var characterManager = CharacterManager()
     @State private var storeManager = StoreManager()
+    @State private var statsManager = StatsManager()
     @State private var pendingInviteFriendId: String?
     @State private var showInviteError = false
 
@@ -19,6 +20,7 @@ struct ContentView: View {
                     friendsManager: friendsManager,
                     characterManager: characterManager,
                     storeManager: storeManager,
+                    statsManager: statsManager,
                     onAcceptInvite: { invite in acceptInvite(invite) },
                     onInviteFriend: { friendId, bestOf, battleMode in inviteFriend(friendId, bestOf: bestOf, tapBattleMode: battleMode) }
                 )
@@ -90,7 +92,8 @@ struct ContentView: View {
 
             case .onlineWaiting:
                 OnlineWaitingView(
-                    selectedMove: (game.session?.role == .host ? game.player1Choice : game.player2Choice) ?? .rock
+                    selectedMove: (game.session?.role == .host ? game.player1Choice : game.player2Choice) ?? .rock,
+                    characterManager: game.characterManager
                 )
                 .transition(.opacity)
 
@@ -197,6 +200,13 @@ struct ContentView: View {
         .onChange(of: game.gameState) { _, newState in
             if newState == .modeSelect {
                 pendingInviteFriendId = nil
+            }
+            if newState == .gameOver, game.isMatchOver, game.isVsComputer || game.isOnline {
+                if game.didLocalPlayerLose {
+                    statsManager.recordLoss()
+                } else {
+                    statsManager.recordWin()
+                }
             }
         }
         .onAppear {

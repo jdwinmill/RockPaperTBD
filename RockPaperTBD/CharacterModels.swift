@@ -7,6 +7,7 @@ struct GameCharacter: Identifiable, Codable, Hashable {
     let flavorText: String
     let slot: Move
     let packId: String?
+    let imageName: String?
 }
 
 struct CharacterPack: Identifiable {

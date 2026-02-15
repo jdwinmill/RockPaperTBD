@@ -90,7 +90,7 @@ struct RevealView: View {
         }
     }
 
-    private var p1Display: (emoji: String, name: String) {
+    private var p1Display: (emoji: String, name: String, imageName: String?) {
         player1Choice.display(using: characterManager)
     }
 
@@ -102,8 +102,7 @@ struct RevealView: View {
                     .foregroundStyle(.white.opacity(0.7))
                     .lineLimit(1)
 
-                Text(p1Display.emoji)
-                    .font(.system(size: 80))
+                CharacterDisplayView(imageName: p1Display.imageName, emoji: p1Display.emoji, size: 80)
                     .scaleEffect(gesture1Scale)
                     .rotationEffect(.degrees(gesture1Rotation))
 
@@ -132,8 +131,7 @@ struct RevealView: View {
                     .foregroundStyle(.white.opacity(0.7))
                     .lineLimit(1)
 
-                Text(player2Choice.emoji)
-                    .font(.system(size: 80))
+                CharacterDisplayView(imageName: nil, emoji: player2Choice.emoji, size: 80)
                     .scaleEffect(gesture2Scale)
                     .rotationEffect(.degrees(gesture2Rotation))
 

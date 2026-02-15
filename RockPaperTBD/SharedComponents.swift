@@ -1,5 +1,25 @@
 import SwiftUI
 
+// MARK: - CharacterDisplayView
+
+struct CharacterDisplayView: View {
+    let imageName: String?
+    let emoji: String
+    let size: CGFloat
+
+    var body: some View {
+        if let imageName, UIImage(named: imageName) != nil {
+            Image(imageName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: size, height: size)
+        } else {
+            Text(emoji)
+                .font(.system(size: size))
+        }
+    }
+}
+
 // MARK: - PulsingDotsView
 
 struct PulsingDotsView: View {

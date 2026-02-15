@@ -7,4 +7,5 @@ enum FirebasePath {
     static let friends = "friends"
     static let friendRequests = "friendRequests"
     static let invites = "invites"
+    static let stats = "stats"
 }

@@ -7,6 +7,7 @@ struct ModeSelectView: View {
     let friendsManager: FriendsManager
     let characterManager: CharacterManager
     let storeManager: StoreManager
+    let statsManager: StatsManager
     let onAcceptInvite: (GameInvite) -> Void
     let onInviteFriend: (String, Int, TapBattleMode) -> Void
 
@@ -17,6 +18,7 @@ struct ModeSelectView: View {
     @State private var selectedBattleMode: TapBattleMode = .tiesOnly
     @State private var showFriends = false
     @State private var showLoadout = false
+    @State private var showLeaderboard = false
 
     private let bestOfOptions = GameConfig.bestOfOptions
 
@@ -202,6 +204,15 @@ struct ModeSelectView: View {
                     .buttonStyle(.plain)
 
                     Button {
+                        showLeaderboard = true
+                    } label: {
+                        Text("Ranks")
+                            .font(.system(size: 18, weight: .medium, design: .rounded))
+                            .foregroundStyle(Theme.winGold)
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
                         showLoadout = true
                     } label: {
                         Text("Customize")
@@ -239,6 +250,13 @@ struct ModeSelectView: View {
                     onInviteFriend(friendId, selectedBestOf, selectedBattleMode)
                 },
                 onDismiss: { showFriends = false }
+            )
+        }
+        .sheet(isPresented: $showLeaderboard) {
+            LeaderboardView(
+                statsManager: statsManager,
+                friendsManager: friendsManager,
+                onDismiss: { showLeaderboard = false }
             )
         }
         .sheet(isPresented: $showLoadout) {

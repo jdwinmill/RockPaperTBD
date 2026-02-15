@@ -93,8 +93,7 @@ struct StoreView: View {
             HStack(spacing: 12) {
                 ForEach(pack.characters) { character in
                     VStack(spacing: 6) {
-                        Text(character.emoji)
-                            .font(.system(size: 40))
+                        CharacterDisplayView(imageName: character.imageName, emoji: character.emoji, size: 40)
                         Text(character.name)
                             .font(.system(size: 12, weight: .bold, design: .rounded))
                             .foregroundStyle(.white.opacity(0.8))
