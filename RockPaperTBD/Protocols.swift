@@ -10,9 +10,10 @@ protocol GameSessionProtocol: AnyObject {
     var onUpdate: (() -> Void)? { get set }
     var onCreated: (() -> Void)? { get set }
 
-    func createGame(bestOf: Int)
+    func createGame(bestOf: Int, tapBattleMode: TapBattleMode)
     func joinGame(code: String, completion: @escaping (Bool) -> Void)
     func submitMove(_ move: Move)
+    func submitTapCount(_ count: Int)
     func clearRound(currentRound: Int)
     func cleanup()
 }
@@ -23,5 +24,6 @@ protocol SoundPlayable {
     func playLose()
     func playTie()
     func playCountdownBeep(step: Int)
+    func playBattleTap(intensity: Double)
     func prepareHaptics()
 }

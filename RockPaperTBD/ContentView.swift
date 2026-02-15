@@ -12,11 +12,11 @@ struct ContentView: View {
             case .modeSelect:
                 ModeSelectView(
                     onPassAndPlay: { game.gameState = .start },
-                    onCreateGame: { bestOf in game.hostGame(bestOf: bestOf) },
+                    onCreateGame: { bestOf, battleMode in game.hostGame(bestOf: bestOf, tapBattleMode: battleMode) },
                     onJoinGame: { game.gameState = .joinGame },
                     friendsManager: friendsManager,
                     onAcceptInvite: { invite in acceptInvite(invite) },
-                    onInviteFriend: { friendId, bestOf in inviteFriend(friendId, bestOf: bestOf) }
+                    onInviteFriend: { friendId, bestOf, battleMode in inviteFriend(friendId, bestOf: bestOf, tapBattleMode: battleMode) }
                 )
                 .transition(.opacity)
 
@@ -109,9 +109,28 @@ struct ContentView: View {
             case .countdown:
                 CountdownView(
                     onFinished: game.onCountdownFinished,
-                    sound: game.sound
+                    sound: game.sound,
+                    showBattleWarning: game.shouldShowBattleWarning
                 )
                 .transition(.opacity)
+
+            case .tapBattle:
+                if let p1 = game.player1Choice, let p2 = game.player2Choice,
+                   let advantage = game.rpsAdvantage {
+                    TapBattleView(
+                        player1Choice: p1,
+                        player2Choice: p2,
+                        player1Name: game.player1Name,
+                        player2Name: game.player2Name,
+                        rpsAdvantage: advantage,
+                        isHost: game.session?.role == .host,
+                        localTapCount: game.session?.role == .host ? game.player1Taps : game.player2Taps,
+                        battleType: game.battleType,
+                        onTap: { game.registerTap() },
+                        onTimerEnd: { game.submitTapCount() }
+                    )
+                    .transition(.opacity)
+                }
 
             case .reveal:
                 if let p1 = game.player1Choice, let p2 = game.player2Choice,
@@ -209,9 +228,9 @@ struct ContentView: View {
         }
     }
 
-    private func inviteFriend(_ friendId: String, bestOf: Int) {
+    private func inviteFriend(_ friendId: String, bestOf: Int, tapBattleMode: TapBattleMode = .tiesOnly) {
         pendingInviteFriendId = friendId
-        game.hostGame(bestOf: bestOf) { [self] in
+        game.hostGame(bestOf: bestOf, tapBattleMode: tapBattleMode) { [self] in
             if let code = game.session?.roomCode, !code.isEmpty {
                 friendsManager.sendInvite(to: friendId, roomCode: code, bestOf: bestOf)
             }

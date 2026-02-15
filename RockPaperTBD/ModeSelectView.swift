@@ -2,16 +2,17 @@ import SwiftUI
 
 struct ModeSelectView: View {
     let onPassAndPlay: () -> Void
-    let onCreateGame: (Int) -> Void
+    let onCreateGame: (Int, TapBattleMode) -> Void
     let onJoinGame: () -> Void
     let friendsManager: FriendsManager
     let onAcceptInvite: (GameInvite) -> Void
-    let onInviteFriend: (String, Int) -> Void
+    let onInviteFriend: (String, Int, TapBattleMode) -> Void
 
     @State private var appeared = false
     @State private var emojiOffset: [CGFloat] = [0, 0, 0]
     @State private var titleScale: CGFloat = 0.8
     @State private var selectedBestOf: Int = 3
+    @State private var selectedBattleMode: TapBattleMode = .tiesOnly
     @State private var showFriends = false
 
     private let bestOfOptions = GameConfig.bestOfOptions
@@ -119,8 +120,35 @@ struct ModeSelectView: View {
                 }
                 .opacity(appeared ? 1 : 0)
 
+                // Tap Battle mode selector
+                HStack(spacing: 8) {
+                    ForEach([(TapBattleMode.tiesOnly, "Ties Only"), (.always, "Always")], id: \.0.rawValue) { mode, label in
+                        Button {
+                            withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
+                                selectedBattleMode = mode
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "bolt.fill")
+                                    .font(.system(size: 10))
+                                Text(label)
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                            }
+                            .foregroundStyle(selectedBattleMode == mode ? .black : .white.opacity(0.7))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(
+                                Capsule()
+                                    .fill(selectedBattleMode == mode ? Theme.battleAccent : .white.opacity(0.15))
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .opacity(appeared ? 1 : 0)
+
                 Button {
-                    onCreateGame(selectedBestOf)
+                    onCreateGame(selectedBestOf, selectedBattleMode)
                 } label: {
                     Text("Create Game")
                         .font(.system(size: 24, weight: .bold, design: .rounded))
@@ -196,7 +224,7 @@ struct ModeSelectView: View {
             FriendsListView(
                 friendsManager: friendsManager,
                 onInvite: { friendId in
-                    onInviteFriend(friendId, selectedBestOf)
+                    onInviteFriend(friendId, selectedBestOf, selectedBattleMode)
                 },
                 onDismiss: { showFriends = false }
             )

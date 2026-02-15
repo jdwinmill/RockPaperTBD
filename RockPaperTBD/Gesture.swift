@@ -63,11 +63,27 @@ enum GameState: Equatable {
     case joinGame
     case onlineSelect
     case onlineWaiting
+    case tapBattle
 }
 
 enum PlayerRole {
     case host
     case guest
+}
+
+enum TapBattleMode: String {
+    case tiesOnly
+    case always
+}
+
+enum BattleType {
+    case tap
+    case swipe
+
+    static func determine(roomCode: String, round: Int) -> BattleType {
+        let codeSum = roomCode.unicodeScalars.reduce(0) { $0 + Int($1.value) }
+        return (codeSum + round) % 2 == 0 ? .tap : .swipe
+    }
 }
 
 enum GameConfig {

@@ -3,6 +3,7 @@ import SwiftUI
 struct CountdownView: View {
     let onFinished: () -> Void
     let sound: any SoundPlayable
+    var showBattleWarning: Bool = false
 
     @State private var currentNumber: Int = 3
     @State private var showThrow: Bool = false
@@ -57,16 +58,26 @@ struct CountdownView: View {
     }
 
     private var countdownNumber: some View {
-        Text(showThrow ? "THROW!" : "\(currentNumber)")
-            .font(.system(size: showThrow ? 80 : 200, weight: .black, design: .rounded))
-            .minimumScaleFactor(0.6)
-            .lineLimit(1)
-            .foregroundStyle(.white)
-            .shadow(color: .white.opacity(0.5), radius: 24)
-            .drawingGroup()
-            .scaleEffect(numberScale)
-            .rotationEffect(.degrees(numberRotation))
-            .padding(.horizontal, 20)
+        VStack(spacing: 12) {
+            Text(showThrow ? "THROW!" : "\(currentNumber)")
+                .font(.system(size: showThrow ? 80 : 200, weight: .black, design: .rounded))
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
+                .foregroundStyle(.white)
+                .shadow(color: .white.opacity(0.5), radius: 24)
+                .drawingGroup()
+                .scaleEffect(numberScale)
+                .rotationEffect(.degrees(numberRotation))
+                .padding(.horizontal, 20)
+
+            if showBattleWarning && !showThrow {
+                Text("GET READY TO BATTLE!")
+                    .font(.system(size: 20, weight: .black, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.8))
+                    .tracking(2)
+                    .transition(.opacity)
+            }
+        }
     }
 
     private func pulsingCircles(size: CGSize) -> some View {

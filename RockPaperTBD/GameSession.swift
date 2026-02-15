@@ -19,12 +19,12 @@ final class GameSession: GameSessionProtocol {
 
     var onCreated: (() -> Void)?
 
-    func createGame(bestOf: Int) {
+    func createGame(bestOf: Int, tapBattleMode: TapBattleMode) {
         role = .host
-        attemptCreateGame(bestOf: bestOf, retriesLeft: 5)
+        attemptCreateGame(bestOf: bestOf, tapBattleMode: tapBattleMode, retriesLeft: 5)
     }
 
-    private func attemptCreateGame(bestOf: Int, retriesLeft: Int) {
+    private func attemptCreateGame(bestOf: Int, tapBattleMode: TapBattleMode, retriesLeft: Int) {
         let code = RoomCode.generate()
         let ref = Database.database().reference().child(FirebasePath.games).child(code)
 
@@ -32,20 +32,23 @@ final class GameSession: GameSessionProtocol {
             DispatchQueue.main.async {
                 guard let self else { return }
                 if snapshot.exists() && retriesLeft > 0 {
-                    self.attemptCreateGame(bestOf: bestOf, retriesLeft: retriesLeft - 1)
+                    self.attemptCreateGame(bestOf: bestOf, tapBattleMode: tapBattleMode, retriesLeft: retriesLeft - 1)
                     return
                 }
 
                 self.roomCode = code
                 self.gameRef = ref
 
-                let data: [String: Any] = [
+                var data: [String: Any] = [
                     "hostId": PlayerIdentity.id,
                     "hostName": DisplayName.saved ?? "Player 1",
                     "bestOf": bestOf,
                     "currentRound": 1,
                     "timestamp": ServerValue.timestamp()
                 ]
+                if tapBattleMode != .tiesOnly {
+                    data["tapBattleMode"] = tapBattleMode.rawValue
+                }
 
                 ref.setValue(data)
                 // Only auto-delete abandoned lobbies (before guest joins)
@@ -82,6 +85,7 @@ final class GameSession: GameSessionProtocol {
                 ref.child("guestId").onDisconnectRemoveValue()
                 ref.child("guestName").onDisconnectRemoveValue()
                 ref.child("guestMove").onDisconnectRemoveValue()
+                ref.child("guestTaps").onDisconnectRemoveValue()
                 self.observeGame()
                 self.observeConnection()
                 completion(true)
@@ -94,11 +98,18 @@ final class GameSession: GameSessionProtocol {
         gameRef?.child(field).setValue(move.rawValue)
     }
 
+    func submitTapCount(_ count: Int) {
+        let field = role == .host ? "hostTaps" : "guestTaps"
+        gameRef?.child(field).setValue(count)
+    }
+
     func clearRound(currentRound: Int) {
         guard role == .host else { return }
         gameRef?.updateChildValues([
             "hostMove": NSNull(),
             "guestMove": NSNull(),
+            "hostTaps": NSNull(),
+            "guestTaps": NSNull(),
             "currentRound": currentRound
         ])
     }
@@ -124,6 +135,9 @@ final class GameSession: GameSessionProtocol {
                     bestOf: dict["bestOf"] as? Int ?? 3,
                     hostMove: dict["hostMove"] as? String,
                     guestMove: dict["guestMove"] as? String,
+                    hostTaps: dict["hostTaps"] as? Int,
+                    guestTaps: dict["guestTaps"] as? Int,
+                    tapBattleMode: dict["tapBattleMode"] as? String,
                     currentRound: dict["currentRound"] as? Int ?? 1,
                     timestamp: dict["timestamp"] as? TimeInterval ?? 0
                 )
@@ -135,6 +149,7 @@ final class GameSession: GameSessionProtocol {
                     ref.child("hostId").onDisconnectRemoveValue()
                     ref.child("hostName").onDisconnectRemoveValue()
                     ref.child("hostMove").onDisconnectRemoveValue()
+                    ref.child("hostTaps").onDisconnectRemoveValue()
                 }
 
                 if self.role == .host && self.guestJoined && data.guestId == nil {
@@ -176,7 +191,8 @@ final class GameSession: GameSessionProtocol {
                 gameRef?.updateChildValues([
                     "hostId": NSNull(),
                     "hostName": NSNull(),
-                    "hostMove": NSNull()
+                    "hostMove": NSNull(),
+                    "hostTaps": NSNull()
                 ])
             } else {
                 gameRef?.removeValue()
@@ -185,7 +201,8 @@ final class GameSession: GameSessionProtocol {
             gameRef?.updateChildValues([
                 "guestId": NSNull(),
                 "guestName": NSNull(),
-                "guestMove": NSNull()
+                "guestMove": NSNull(),
+                "guestTaps": NSNull()
             ])
         }
         gameRef = nil

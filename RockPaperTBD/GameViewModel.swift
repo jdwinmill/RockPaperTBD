@@ -13,6 +13,14 @@ final class GameViewModel {
     var bestOf: Int = 0
     var showDisconnectAlert: Bool = false
 
+    // Tap Battle
+    var player1Taps: Int = 0
+    var player2Taps: Int = 0
+    var rpsAdvantage: RoundResult?
+    var tapBattleSubmitted: Bool = false
+    var tapBattleMode: TapBattleMode = .tiesOnly
+    var battleType: BattleType = .tap
+
     // Online
     var session: (any GameSessionProtocol)?
     var isOnline: Bool { session != nil }
@@ -53,6 +61,14 @@ final class GameViewModel {
 
     var isMatchOver: Bool { matchWinner != nil }
 
+    var shouldShowBattleWarning: Bool {
+        guard isOnline else { return false }
+        if tapBattleMode == .always { return true }
+        // tiesOnly: show warning only if it's a tie
+        guard let p1 = player1Choice, let p2 = player2Choice else { return false }
+        return p1 == p2
+    }
+
     var didLocalPlayerLose: Bool {
         guard isOnline, let winner = matchWinner, let role = session?.role else { return false }
         switch role {
@@ -81,8 +97,25 @@ final class GameViewModel {
     }
 
     func onCountdownFinished() {
-        determineWinner()
-        gameState = .reveal
+        if isOnline {
+            let rps = computeRpsResult()
+            rpsAdvantage = rps
+
+            let shouldBattle = tapBattleMode == .always || rps == .tie
+            if shouldBattle {
+                battleType = BattleType.determine(
+                    roomCode: session?.roomCode ?? "",
+                    round: currentRound
+                )
+                gameState = .tapBattle
+            } else {
+                determineWinner()
+                gameState = .reveal
+            }
+        } else {
+            determineWinner()
+            gameState = .reveal
+        }
     }
 
     func nextRound() {
@@ -125,6 +158,12 @@ final class GameViewModel {
         roundResult = nil
         flavorText = nil
         bestOf = 0
+        player1Taps = 0
+        player2Taps = 0
+        rpsAdvantage = nil
+        tapBattleSubmitted = false
+        tapBattleMode = .tiesOnly
+        battleType = .tap
     }
 
     private func advanceToNextRound() {
@@ -133,6 +172,11 @@ final class GameViewModel {
         player2Choice = nil
         roundResult = nil
         flavorText = nil
+        player1Taps = 0
+        player2Taps = 0
+        rpsAdvantage = nil
+        tapBattleSubmitted = false
+        battleType = .tap
         if !wasTie {
             currentRound += 1
         }
@@ -140,13 +184,14 @@ final class GameViewModel {
 
     // MARK: - Online Mode
 
-    func hostGame(bestOf: Int, onCreated: (() -> Void)? = nil) {
+    func hostGame(bestOf: Int, tapBattleMode: TapBattleMode = .tiesOnly, onCreated: (() -> Void)? = nil) {
         let session = makeSession()
         self.session = session
         clearGameState()
         self.bestOf = bestOf
+        self.tapBattleMode = tapBattleMode
         session.onCreated = onCreated
-        session.createGame(bestOf: bestOf)
+        session.createGame(bestOf: bestOf, tapBattleMode: tapBattleMode)
         session.onUpdate = { [weak self] in self?.handleSessionUpdate() }
         gameState = .hostWaiting
     }
@@ -160,6 +205,7 @@ final class GameViewModel {
                 session.onUpdate = { [weak self] in self?.handleSessionUpdate() }
                 if let data = session.gameData {
                     self.bestOf = data.bestOf
+                    self.tapBattleMode = TapBattleMode(rawValue: data.tapBattleMode ?? "tiesOnly") ?? .tiesOnly
                 }
                 self.player1Score = 0
                 self.player2Score = 0
@@ -196,6 +242,83 @@ final class GameViewModel {
         gameState = .onlineSelect
     }
 
+    // MARK: - Tap Battle
+
+    func registerTap() {
+        guard gameState == .tapBattle, !tapBattleSubmitted else { return }
+        if session?.role == .host {
+            player1Taps += 1
+        } else {
+            player2Taps += 1
+        }
+        let localTaps = session?.role == .host ? player1Taps : player2Taps
+        let intensity = min(1.0, Double(localTaps) / 40.0)
+        sound.playBattleTap(intensity: intensity)
+    }
+
+    func submitTapCount() {
+        guard !tapBattleSubmitted else { return }
+        tapBattleSubmitted = true
+        let count = session?.role == .host ? player1Taps : player2Taps
+        session?.submitTapCount(count)
+    }
+
+    func onTapBattleResolved() {
+        guard let data = session?.gameData,
+              let p1 = player1Choice, let p2 = player2Choice,
+              let hostTaps = data.hostTaps, let guestTaps = data.guestTaps else { return }
+
+        player1Taps = hostTaps
+        player2Taps = guestTaps
+
+        let headStart = 10
+        let p1Effective = hostTaps + (rpsAdvantage == .player1Wins ? headStart : 0)
+        let p2Effective = guestTaps + (rpsAdvantage == .player2Wins ? headStart : 0)
+
+        if p1Effective > p2Effective {
+            roundResult = .player1Wins
+            player1Score += 1
+            flavorText = p1.flavorText(against: p2)
+        } else if p2Effective > p1Effective {
+            roundResult = .player2Wins
+            player2Score += 1
+            flavorText = p2.flavorText(against: p1)
+        } else {
+            // Equal effective taps — RPS advantage breaks the tie
+            if let advantage = rpsAdvantage, advantage != .tie {
+                roundResult = advantage
+                if advantage == .player1Wins {
+                    player1Score += 1
+                    flavorText = p1.flavorText(against: p2)
+                } else {
+                    player2Score += 1
+                    flavorText = p2.flavorText(against: p1)
+                }
+            } else {
+                roundResult = .tie
+                flavorText = nil
+            }
+        }
+
+        // Play appropriate sound
+        if roundResult == .tie {
+            sound.playTie()
+        } else if (roundResult == .player1Wins && session?.role == .host) ||
+                  (roundResult == .player2Wins && session?.role == .guest) {
+            sound.playWin()
+        } else {
+            sound.playLose()
+        }
+
+        gameState = .reveal
+    }
+
+    private func computeRpsResult() -> RoundResult {
+        guard let p1 = player1Choice, let p2 = player2Choice else { return .tie }
+        if p1 == p2 { return .tie }
+        return p1.beats(p2) ? .player1Wins : .player2Wins
+    }
+
     func handleSessionUpdate() {
         guard let session else { return }
 
@@ -219,6 +342,11 @@ final class GameViewModel {
                 gameState = .countdown
             }
 
+        case .tapBattle:
+            if data.bothTapsSubmitted {
+                onTapBattleResolved()
+            }
+
         case .onlineSelect:
             if session.role == .guest {
                 currentRound = data.currentRound
@@ -231,6 +359,11 @@ final class GameViewModel {
                 player2Choice = nil
                 roundResult = nil
                 flavorText = nil
+                player1Taps = 0
+                player2Taps = 0
+                rpsAdvantage = nil
+                tapBattleSubmitted = false
+                battleType = .tap
                 currentRound = data.currentRound
                 gameState = .onlineSelect
             }

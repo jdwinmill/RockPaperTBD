@@ -37,6 +37,12 @@ enum Theme {
     static let accentPink = Color(hex: "EC4899")
     static let accentPurple = Color(hex: "8B5CF6")
 
+    // Battle
+    static let battleStart = Color(hex: "7F1D1D")
+    static let battleEnd = Color(hex: "EA580C")
+    static let battleRipple = Color(hex: "F97316")
+    static let battleAccent = Color(hex: "FCD34D")
+
     // Friends
     static let friendGreen = Color(hex: "10B981")
     static let friendGreenEnd = Color(hex: "059669")

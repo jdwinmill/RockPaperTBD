@@ -133,6 +133,14 @@ final class SoundManager: SoundPlayable {
         }
     }
 
+    func playBattleTap(intensity: Double) {
+        impactLight.impactOccurred()
+        let frequency = 300.0 + intensity * 500.0 // 300–800 Hz
+        if let buffer = makeBuffer(frequency: frequency, duration: 0.04) {
+            scheduleBuffer(buffer)
+        }
+    }
+
     func prepareHaptics() {
         impactLight.prepare()
         impactMedium.prepare()

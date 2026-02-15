@@ -22,11 +22,18 @@ struct OnlineGameData {
     var bestOf: Int
     var hostMove: String?
     var guestMove: String?
+    var hostTaps: Int?
+    var guestTaps: Int?
+    var tapBattleMode: String?
     var currentRound: Int
     var timestamp: TimeInterval
 
     var bothMovesSubmitted: Bool {
         hostMove != nil && guestMove != nil
+    }
+
+    var bothTapsSubmitted: Bool {
+        hostTaps != nil && guestTaps != nil
     }
 }
 
