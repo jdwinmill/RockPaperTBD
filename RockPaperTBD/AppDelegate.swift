@@ -9,6 +9,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         if Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil {
             FirebaseApp.configure()
         }
+        application.isIdleTimerDisabled = true
         return true
     }
 
