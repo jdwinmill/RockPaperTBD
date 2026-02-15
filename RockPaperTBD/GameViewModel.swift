@@ -21,6 +21,9 @@ final class GameViewModel {
     var tapBattleMode: TapBattleMode = .tiesOnly
     var battleType: BattleType = .tap
 
+    // VS Computer
+    var isVsComputer: Bool = false
+
     // Online
     var session: (any GameSessionProtocol)?
     var isOnline: Bool { session != nil }
@@ -46,6 +49,7 @@ final class GameViewModel {
         if isOnline {
             return session?.gameData?.guestName ?? "Player 2"
         }
+        if isVsComputer { return "CPU" }
         return "Player 2"
     }
 
@@ -62,7 +66,7 @@ final class GameViewModel {
     var isMatchOver: Bool { matchWinner != nil }
 
     var shouldShowBattleWarning: Bool {
-        guard isOnline else { return false }
+        guard isOnline || isVsComputer else { return false }
         if tapBattleMode == .always { return true }
         // tiesOnly: show warning only if it's a tie
         guard let p1 = player1Choice, let p2 = player2Choice else { return false }
@@ -70,7 +74,9 @@ final class GameViewModel {
     }
 
     var didLocalPlayerLose: Bool {
-        guard isOnline, let winner = matchWinner, let role = session?.role else { return false }
+        guard let winner = matchWinner else { return false }
+        if isVsComputer { return winner == .player2Wins }
+        guard isOnline, let role = session?.role else { return false }
         switch role {
         case .host: return winner == .player2Wins
         case .guest: return winner == .player1Wins
@@ -85,28 +91,30 @@ final class GameViewModel {
 
     // MARK: - Local Mode
 
-    func selectGesture(_ gesture: Move, forPlayer player: Int) {
+    func selectGesture(_ gesture: Move) {
         sound.playTap()
-        if player == 1 {
-            player1Choice = gesture
-            gameState = .transition
-        } else {
-            player2Choice = gesture
-            gameState = .countdown
+        player1Choice = gesture
+        if isVsComputer {
+            player2Choice = Move.allCases.randomElement()!
         }
+        gameState = .countdown
     }
 
     func onCountdownFinished() {
-        if isOnline {
+        if isOnline || isVsComputer {
             let rps = computeRpsResult()
             rpsAdvantage = rps
 
             let shouldBattle = tapBattleMode == .always || rps == .tie
             if shouldBattle {
-                battleType = BattleType.determine(
-                    roomCode: session?.roomCode ?? "",
-                    round: currentRound
-                )
+                if isOnline {
+                    battleType = BattleType.determine(
+                        roomCode: session?.roomCode ?? "",
+                        round: currentRound
+                    )
+                } else {
+                    battleType = Bool.random() ? .tap : .swipe
+                }
                 gameState = .tapBattle
             } else {
                 determineWinner()
@@ -130,22 +138,22 @@ final class GameViewModel {
     func resetGame() {
         session?.cleanup()
         session = nil
+        isVsComputer = false
         clearGameState()
         gameState = .modeSelect
     }
 
     func resetToStart() {
+        isVsComputer = false
         clearGameState()
         gameState = .start
     }
 
-    func player2Ready() {
-        gameState = .player2Select
-    }
-
-    func startGame(bestOf: Int) {
+    func startGame(bestOf: Int, tapBattleMode: TapBattleMode = .tiesOnly) {
         clearGameState()
         self.bestOf = bestOf
+        self.tapBattleMode = tapBattleMode
+        isVsComputer = true
         gameState = .player1Select
     }
 
@@ -246,12 +254,12 @@ final class GameViewModel {
 
     func registerTap() {
         guard gameState == .tapBattle, !tapBattleSubmitted else { return }
-        if session?.role == .host {
+        if isVsComputer || session?.role == .host {
             player1Taps += 1
         } else {
             player2Taps += 1
         }
-        let localTaps = session?.role == .host ? player1Taps : player2Taps
+        let localTaps = isVsComputer ? player1Taps : (session?.role == .host ? player1Taps : player2Taps)
         let intensity = min(1.0, Double(localTaps) / 40.0)
         sound.playBattleTap(intensity: intensity)
     }
@@ -259,8 +267,13 @@ final class GameViewModel {
     func submitTapCount() {
         guard !tapBattleSubmitted else { return }
         tapBattleSubmitted = true
-        let count = session?.role == .host ? player1Taps : player2Taps
-        session?.submitTapCount(count)
+        if isVsComputer {
+            player2Taps = GameConfig.cpuTapCount(for: battleType)
+            resolveTapBattleLocally()
+        } else {
+            let count = session?.role == .host ? player1Taps : player2Taps
+            session?.submitTapCount(count)
+        }
     }
 
     func onTapBattleResolved() {
@@ -305,6 +318,48 @@ final class GameViewModel {
             sound.playTie()
         } else if (roundResult == .player1Wins && session?.role == .host) ||
                   (roundResult == .player2Wins && session?.role == .guest) {
+            sound.playWin()
+        } else {
+            sound.playLose()
+        }
+
+        gameState = .reveal
+    }
+
+    private func resolveTapBattleLocally() {
+        guard let p1 = player1Choice, let p2 = player2Choice else { return }
+
+        let headStart = 10
+        let p1Effective = player1Taps + (rpsAdvantage == .player1Wins ? headStart : 0)
+        let p2Effective = player2Taps + (rpsAdvantage == .player2Wins ? headStart : 0)
+
+        if p1Effective > p2Effective {
+            roundResult = .player1Wins
+            player1Score += 1
+            flavorText = p1.flavorText(against: p2)
+        } else if p2Effective > p1Effective {
+            roundResult = .player2Wins
+            player2Score += 1
+            flavorText = p2.flavorText(against: p1)
+        } else {
+            if let advantage = rpsAdvantage, advantage != .tie {
+                roundResult = advantage
+                if advantage == .player1Wins {
+                    player1Score += 1
+                    flavorText = p1.flavorText(against: p2)
+                } else {
+                    player2Score += 1
+                    flavorText = p2.flavorText(against: p1)
+                }
+            } else {
+                roundResult = .tie
+                flavorText = nil
+            }
+        }
+
+        if roundResult == .tie {
+            sound.playTie()
+        } else if roundResult == .player1Wins {
             sound.playWin()
         } else {
             sound.playLose()
@@ -393,7 +448,7 @@ final class GameViewModel {
             roundResult = .player2Wins
             player2Score += 1
             flavorText = p2.flavorText(against: p1)
-            if isOnline && session?.role == .host {
+            if isVsComputer || (isOnline && session?.role == .host) {
                 sound.playLose()
             } else {
                 sound.playWin()

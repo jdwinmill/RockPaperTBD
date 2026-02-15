@@ -6,6 +6,8 @@ struct PlayerSelectView: View {
     let player1Score: Int
     let player2Score: Int
     var isOnline: Bool = false
+    var player2Label: String = "P2"
+    var isVsComputer: Bool = false
     let onSelect: (Move) -> Void
 
     @State private var appeared = false
@@ -38,7 +40,7 @@ struct PlayerSelectView: View {
                     .foregroundStyle(.white.opacity(0.8))
                     .opacity(appeared ? 1 : 0)
 
-                if playerNumber == 1 && !isOnline {
+                if playerNumber == 1 && !isOnline && !isVsComputer {
                     Text("Player 2, look away! \u{1F440}")
                         .font(.system(size: 16, weight: .medium, design: .rounded))
                         .foregroundStyle(.white.opacity(0.6))
@@ -127,7 +129,7 @@ struct PlayerSelectView: View {
             .frame(maxWidth: .infinity)
 
             VStack(spacing: 4) {
-                Text("P2")
+                Text(player2Label)
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.6))
                 Text("\(player2Score)")

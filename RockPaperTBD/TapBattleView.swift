@@ -9,6 +9,7 @@ struct TapBattleView: View {
     let isHost: Bool
     let localTapCount: Int
     let battleType: BattleType
+    var isVsComputer: Bool = false
     let onTap: () -> Void
     let onTimerEnd: () -> Void
 
@@ -185,21 +186,31 @@ struct TapBattleView: View {
 
             // Opponent mystery indicator
             VStack(spacing: 6) {
-                HStack(spacing: 4) {
-                    ForEach(0..<3, id: \.self) { i in
-                        Text("?")
-                            .font(.system(size: 28, weight: .heavy, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.25))
-                            .scaleEffect(appeared ? 1 : 0)
-                            .animation(
-                                .spring(response: 0.4, dampingFraction: 0.6)
-                                .delay(0.3 + Double(i) * 0.08),
-                                value: appeared
-                            )
+                if isVsComputer {
+                    Text("\u{1F916}")
+                        .font(.system(size: 36))
+                        .scaleEffect(appeared ? 1 : 0)
+                        .animation(
+                            .spring(response: 0.4, dampingFraction: 0.6).delay(0.3),
+                            value: appeared
+                        )
+                } else {
+                    HStack(spacing: 4) {
+                        ForEach(0..<3, id: \.self) { i in
+                            Text("?")
+                                .font(.system(size: 28, weight: .heavy, design: .rounded))
+                                .foregroundStyle(.white.opacity(0.25))
+                                .scaleEffect(appeared ? 1 : 0)
+                                .animation(
+                                    .spring(response: 0.4, dampingFraction: 0.6)
+                                    .delay(0.3 + Double(i) * 0.08),
+                                    value: appeared
+                                )
+                        }
                     }
                 }
 
-                Text(isHost ? player2Name : player1Name)
+                Text(isVsComputer ? "CPU" : (isHost ? player2Name : player1Name))
                     .font(.system(size: 14, weight: .medium, design: .rounded))
                     .foregroundStyle(.white.opacity(0.3))
             }
@@ -418,8 +429,10 @@ struct TapBattleView: View {
             if timeRemaining <= 0 {
                 timer.invalidate()
                 timerActive = false
-                withAnimation(.spring(response: 0.3)) {
-                    waitingForOpponent = true
+                if !isVsComputer {
+                    withAnimation(.spring(response: 0.3)) {
+                        waitingForOpponent = true
+                    }
                 }
                 onTimerEnd()
                 return

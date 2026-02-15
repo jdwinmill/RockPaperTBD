@@ -1,65 +1,14 @@
 import SwiftUI
 
-struct TransitionView: View {
-    let onReady: () -> Void
-
-    @State private var iconRotation: Double = 0
-
-    var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [Theme.transitionStart, Theme.transitionMid, Theme.transitionEnd],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-
-            VStack(spacing: 32) {
-                Spacer()
-
-                Text("🔄")
-                    .font(.system(size: 80))
-                    .rotationEffect(.degrees(iconRotation))
-                    .onAppear {
-                        withAnimation(.linear(duration: 3).repeatForever(autoreverses: false)) {
-                            iconRotation = 360
-                        }
-                    }
-
-                Text("Pass to\nPlayer 2")
-                    .font(.system(size: 52, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
-                    .multilineTextAlignment(.center)
-
-                Text("Make sure Player 1\nisn't looking!")
-                    .font(.system(size: 18, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.7))
-                    .multilineTextAlignment(.center)
-
-                Spacer()
-
-                Text("Tap to continue")
-                    .font(.system(size: 18, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.5))
-
-                Spacer()
-                    .frame(height: 60)
-            }
-        }
-        .onTapGesture {
-            onReady()
-        }
-    }
-}
-
 struct StartView: View {
-    let onStart: (Int) -> Void
+    let onStart: (Int, TapBattleMode) -> Void
     var onBack: (() -> Void)? = nil
 
     @State private var appeared = false
     @State private var emojiOffset: [CGFloat] = [0, 0, 0]
     @State private var titleScale: CGFloat = 0.8
     @State private var selectedBestOf: Int = 3
+    @State private var selectedBattleMode: TapBattleMode = .tiesOnly
 
     private let bestOfOptions = GameConfig.bestOfOptions
 
@@ -133,7 +82,7 @@ struct StartView: View {
                     )
                     .scaleEffect(titleScale)
 
-                Text("Pass & Play")
+                Text("VS Computer")
                     .font(.system(size: 18, weight: .medium, design: .rounded))
                     .foregroundStyle(.white.opacity(0.5))
                     .padding(.top, 4)
@@ -162,8 +111,35 @@ struct StartView: View {
                 }
                 .opacity(appeared ? 1 : 0)
 
+                // Tap Battle mode selector
+                HStack(spacing: 10) {
+                    ForEach([(TapBattleMode.tiesOnly, "Ties Only"), (.always, "Always")], id: \.0.rawValue) { mode, label in
+                        Button {
+                            withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
+                                selectedBattleMode = mode
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "bolt.fill")
+                                    .font(.system(size: 10))
+                                Text(label)
+                                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                            }
+                            .foregroundStyle(selectedBattleMode == mode ? .black : .white.opacity(0.7))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(
+                                Capsule()
+                                    .fill(selectedBattleMode == mode ? Theme.battleAccent : .white.opacity(0.15))
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .opacity(appeared ? 1 : 0)
+
                 Button {
-                    onStart(selectedBestOf)
+                    onStart(selectedBestOf, selectedBattleMode)
                 } label: {
                     Text("Start Game")
                         .font(.system(size: 24, weight: .bold, design: .rounded))

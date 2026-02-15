@@ -21,7 +21,10 @@ final class MockGameSession: GameSessionProtocol {
     var cleanupCalled = false
     var joinGameCode: String?
 
-    func createGame(bestOf: Int) {
+    var submitTapCountCalled = false
+    var submittedTapCount: Int?
+
+    func createGame(bestOf: Int, tapBattleMode: TapBattleMode) {
         createGameCalled = true
         createGameBestOf = bestOf
         roomCode = "TEST"
@@ -36,6 +39,11 @@ final class MockGameSession: GameSessionProtocol {
     func submitMove(_ move: Move) {
         submitMoveCalled = true
         submittedMove = move
+    }
+
+    func submitTapCount(_ count: Int) {
+        submitTapCountCalled = true
+        submittedTapCount = count
     }
 
     func clearRound(currentRound: Int) {

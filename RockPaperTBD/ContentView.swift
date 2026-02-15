@@ -11,7 +11,7 @@ struct ContentView: View {
             switch game.gameState {
             case .modeSelect:
                 ModeSelectView(
-                    onPassAndPlay: { game.gameState = .start },
+                    onVsComputer: { game.gameState = .start },
                     onCreateGame: { bestOf, battleMode in game.hostGame(bestOf: bestOf, tapBattleMode: battleMode) },
                     onJoinGame: { game.gameState = .joinGame },
                     friendsManager: friendsManager,
@@ -22,7 +22,7 @@ struct ContentView: View {
 
             case .start:
                 StartView(
-                    onStart: { bestOf in game.startGame(bestOf: bestOf) },
+                    onStart: { bestOf, battleMode in game.startGame(bestOf: bestOf, tapBattleMode: battleMode) },
                     onBack: { game.gameState = .modeSelect }
                 )
                 .transition(.opacity)
@@ -55,8 +55,10 @@ struct ContentView: View {
                     currentRound: game.currentRound,
                     player1Score: game.player1Score,
                     player2Score: game.player2Score,
+                    player2Label: game.isVsComputer ? "CPU" : "P2",
+                    isVsComputer: game.isVsComputer,
                     onSelect: { move in
-                        game.selectGesture(move, forPlayer: 1)
+                        game.selectGesture(move)
                     }
                 )
                 .transition(.asymmetric(
@@ -64,26 +66,6 @@ struct ContentView: View {
                     removal: .move(edge: .leading).combined(with: .opacity)
                 ))
                 .id("p1select-\(game.currentRound)")
-
-            case .transition:
-                TransitionView(onReady: game.player2Ready)
-                    .transition(.opacity)
-
-            case .player2Select:
-                PlayerSelectView(
-                    playerNumber: 2,
-                    currentRound: game.currentRound,
-                    player1Score: game.player1Score,
-                    player2Score: game.player2Score,
-                    onSelect: { move in
-                        game.selectGesture(move, forPlayer: 2)
-                    }
-                )
-                .transition(.asymmetric(
-                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                    removal: .move(edge: .leading).combined(with: .opacity)
-                ))
-                .id("p2select-\(game.currentRound)")
 
             case .onlineSelect:
                 PlayerSelectView(
@@ -123,9 +105,10 @@ struct ContentView: View {
                         player1Name: game.player1Name,
                         player2Name: game.player2Name,
                         rpsAdvantage: advantage,
-                        isHost: game.session?.role == .host,
-                        localTapCount: game.session?.role == .host ? game.player1Taps : game.player2Taps,
+                        isHost: game.isVsComputer ? true : game.session?.role == .host,
+                        localTapCount: game.isVsComputer ? game.player1Taps : (game.session?.role == .host ? game.player1Taps : game.player2Taps),
                         battleType: game.battleType,
+                        isVsComputer: game.isVsComputer,
                         onTap: { game.registerTap() },
                         onTimerEnd: { game.submitTapCount() }
                     )

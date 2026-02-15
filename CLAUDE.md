@@ -1,7 +1,7 @@
 # CLAUDE.md - RockPaperTBD
 
 ## Project
-SwiftUI iOS game - Rock Paper Scissors. Pass-and-play on a single device + online 2-player via Firebase Realtime Database.
+SwiftUI iOS game - Rock Paper Scissors. VS Computer (CPU opponent) + online 2-player via Firebase Realtime Database.
 
 ## Build & Run
 ```bash
@@ -36,7 +36,8 @@ xcodebuild -scheme RockPaperTBD -destination 'platform=iOS Simulator,name=iPhone
 - Portrait locked via `AppDelegate`, dark mode enforced, status bar hidden
 - 3 gestures: Rock, Paper, Scissors (classic RPS)
 - `GameConfig.bestOfOptions` defines best-of choices (3, 5, 7, Endless=0)
-- Best of X mode: `startGame(bestOf:)` takes Int (0 = endless, 3/5/7 for match play)
+- VS Computer mode: `startGame(bestOf:tapBattleMode:)` sets `isVsComputer = true`, CPU picks random moves + generates tap counts locally
+- `GameConfig.cpuTapCount(for:)` generates realistic CPU tap/swipe counts (tap: 25–45, swipe: 10–22)
 - Online mode: `hostGame(bestOf:onCreated:)` / `joinGame(code:completion:)` / `submitOnlineMove(_:)` / `onlineNextRound()`
 - `GameSession` manages all Firebase RTDB interaction; `onUpdate` callback drives ViewModel state transitions
 - Host controls round advancement (clears moves in Firebase); guest transitions via observer
@@ -48,22 +49,22 @@ xcodebuild -scheme RockPaperTBD -destination 'platform=iOS Simulator,name=iPhone
 | File | Purpose |
 |------|---------|
 | `Gesture.swift` | `Move` enum, `RoundResult`, `GameState`, `PlayerRole`, `GameConfig` |
-| `GameViewModel.swift` | State machine, scoring, best-of, local + online methods (protocol-based DI) |
+| `GameViewModel.swift` | State machine, scoring, best-of, vs-computer + online methods (protocol-based DI) |
 | `ContentView.swift` | Main router with animated transitions |
 | `Protocols.swift` | `GameSessionProtocol` + `SoundPlayable` — abstractions for testability |
 | `SharedComponents.swift` | Reusable UI: `PulsingDotsView`, `CopyableCodeView`, `CharacterLimitModifier`, `ConfettiParticle`, `ConfettiOverlay` |
 | `FirebasePaths.swift` | `FirebasePath` enum — centralized RTDB path constants |
-| `PlayerSelectView.swift` | Gesture selection (3-across HStack), `isOnline` param |
+| `PlayerSelectView.swift` | Gesture selection (3-across HStack), `isOnline`/`isVsComputer` params |
 | `CountdownView.swift` | 3-2-1-THROW animation + `Color(hex:)` extension |
 | `RevealView.swift` | Results display with confetti |
-| `TransitionView.swift` | Tap-to-continue screen + `StartView` (title + best-of picker) |
+| `TransitionView.swift` | `StartView` (title + best-of + battle mode picker for VS Computer) |
 | `GameOverView.swift` | Match winner screen with confetti + post-game add friend |
 | `SoundManager.swift` | AVAudioEngine tone generation + UIKit haptics (conforms to `SoundPlayable`) |
 | `Theme.swift` | Cached Color constants (player, countdown, results, friends) |
 | `AppDelegate.swift` | Portrait lock + `FirebaseApp.configure()` |
 | `OnlineGame.swift` | `OnlineGameData`, `PlayerIdentity`, `RoomCode` |
 | `GameSession.swift` | Firebase RTDB manager (conforms to `GameSessionProtocol`) |
-| `ModeSelectView.swift` | Mode selection: Pass & Play, Create Game, Join Game, Friends + invite banner |
+| `ModeSelectView.swift` | Mode selection: VS Computer, Create Game, Join Game, Friends + invite banner |
 | `HostWaitingView.swift` | Room code display + waiting for guest |
 | `JoinGameView.swift` | Room code input + join validation |
 | `OnlineWaitingView.swift` | Waiting for opponent's move |
@@ -87,5 +88,19 @@ xcodebuild -scheme RockPaperTBD -destination 'platform=iOS Simulator,name=iPhone
 /invites/{targetUuid}/{senderUuid}/ — game invites (auto-removed onDisconnect)
 ```
 
+## State Machine Flows
+
+**VS Computer:**
+```
+.modeSelect → .start → .player1Select → .countdown → .reveal → .gameOver
+                                              ↓ (if battle triggers)
+                                         .tapBattle → .reveal
+```
+
+**Online (unchanged):**
+```
+.modeSelect → hostWaiting/joinGame → .onlineSelect → .onlineWaiting → .countdown → .tapBattle → .reveal
+```
+
 ## Status
-Online multiplayer + friends system implemented. See `spec.md` for full details and future phase ideas.
+VS Computer mode + online multiplayer + friends system implemented. See `spec.md` for full details and future phase ideas.

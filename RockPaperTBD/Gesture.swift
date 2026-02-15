@@ -54,8 +54,6 @@ enum GameState: Equatable {
     case modeSelect
     case start
     case player1Select
-    case transition
-    case player2Select
     case countdown
     case reveal
     case gameOver
@@ -93,4 +91,11 @@ enum GameConfig {
         ("Best of 7", 7),
         ("Endless", 0),
     ]
+
+    static func cpuTapCount(for battleType: BattleType) -> Int {
+        switch battleType {
+        case .tap:   return Int.random(in: 25...45)
+        case .swipe: return Int.random(in: 10...22)
+        }
+    }
 }

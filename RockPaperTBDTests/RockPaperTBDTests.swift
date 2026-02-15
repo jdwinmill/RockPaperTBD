@@ -189,31 +189,21 @@ struct GameViewModelLocalTests {
         #expect(!vm.isMatchOver)
     }
 
-    @Test func player1SelectSetsChoice() {
+    @Test func selectGestureSetsChoiceAndGoesToCountdown() {
         let vm = makeVM()
         vm.startGame(bestOf: 3)
-        vm.selectGesture(.rock, forPlayer: 1)
+        vm.selectGesture(.rock)
         #expect(vm.player1Choice == .rock)
-        #expect(vm.gameState == .transition)
-    }
-
-    @Test func player2SelectSetsChoice() {
-        let vm = makeVM()
-        vm.startGame(bestOf: 3)
-        vm.selectGesture(.rock, forPlayer: 1)
-        vm.player2Ready()
-        #expect(vm.gameState == .player2Select)
-        vm.selectGesture(.scissors, forPlayer: 2)
-        #expect(vm.player2Choice == .scissors)
+        #expect(vm.player2Choice != nil) // CPU picks randomly
         #expect(vm.gameState == .countdown)
     }
 
     @Test func countdownFinishedDeterminesWinner() {
         let vm = makeVM()
         vm.startGame(bestOf: 3)
-        vm.selectGesture(.rock, forPlayer: 1)
-        vm.player2Ready()
-        vm.selectGesture(.scissors, forPlayer: 2)
+        vm.player1Choice = .rock
+        vm.player2Choice = .scissors
+        vm.gameState = .countdown
         vm.onCountdownFinished()
         #expect(vm.roundResult == .player1Wins)
         #expect(vm.player1Score == 1)
@@ -223,6 +213,7 @@ struct GameViewModelLocalTests {
     @Test func tieDoesNotAdvanceRound() {
         let vm = makeVM()
         vm.startGame(bestOf: 3)
+        vm.isVsComputer = false // bypass tap battle for pure logic test
         vm.player1Choice = .rock
         vm.player2Choice = .rock
         vm.onCountdownFinished()
@@ -325,9 +316,11 @@ struct GameViewModelLocalTests {
     @Test func flavorTextNilOnTie() {
         let vm = makeVM()
         vm.startGame(bestOf: 3)
+        vm.isVsComputer = false // bypass tap battle for pure logic test
         vm.player1Choice = .rock
         vm.player2Choice = .rock
         vm.onCountdownFinished()
+        #expect(vm.roundResult == .tie)
         #expect(vm.flavorText == nil)
     }
 }
@@ -604,7 +597,7 @@ struct GameViewModelSoundTests {
         let sound = MockSoundManager()
         let vm = GameViewModel(sound: sound)
         vm.startGame(bestOf: 3)
-        vm.selectGesture(.rock, forPlayer: 1)
+        vm.selectGesture(.rock)
         #expect(sound.tapCount == 1)
     }
 
@@ -622,13 +615,14 @@ struct GameViewModelSoundTests {
         let sound = MockSoundManager()
         let vm = GameViewModel(sound: sound)
         vm.startGame(bestOf: 3)
+        vm.isVsComputer = false // bypass tap battle for pure sound test
         vm.player1Choice = .rock
         vm.player2Choice = .rock
         vm.onCountdownFinished()
         #expect(sound.tieCount == 1)
     }
 
-    @Test func p2WinPlaysWinInLocalMode() {
+    @Test func cpuWinPlaysLoseSound() {
         let sound = MockSoundManager()
         let vm = GameViewModel(sound: sound)
         vm.startGame(bestOf: 3)
@@ -636,7 +630,7 @@ struct GameViewModelSoundTests {
         vm.player2Choice = .rock
         vm.onCountdownFinished()
         #expect(vm.roundResult == .player2Wins)
-        #expect(sound.winCount == 1)
+        #expect(sound.loseCount == 1)
     }
 
     @Test func onlineHostLosingPlaysLoseSound() {

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ModeSelectView: View {
-    let onPassAndPlay: () -> Void
+    let onVsComputer: () -> Void
     let onCreateGame: (Int, TapBattleMode) -> Void
     let onJoinGame: () -> Void
     let friendsManager: FriendsManager
@@ -71,9 +71,9 @@ struct ModeSelectView: View {
                 Spacer()
 
                 Button {
-                    onPassAndPlay()
+                    onVsComputer()
                 } label: {
-                    Text("Pass & Play")
+                    Text("VS Computer")
                         .font(.system(size: 24, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
