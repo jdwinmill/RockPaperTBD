@@ -35,6 +35,8 @@ xcodebuild -scheme RockPaperTBD -destination 'platform=iOS Simulator,name=iPhone
 - `CharacterDisplayView` renders character image (asset catalog) with emoji fallback
 - `Move.display(using:)` returns `(emoji, name, imageName)` tuple for character-aware rendering
 - **IAP via StoreKit 2** — `StoreManager` (`@Observable`) handles product loading, purchasing, restore
+- **Leaderboard** — `StatsManager` (`@Observable`) tracks wins/losses in Firebase RTDB (`/stats/{uuid}/`), `LeaderboardView` shows friend rankings
+- **Tap Battle** — `TapBattleView` is a dedicated view for the tap/swipe battle mini-game with ripple effects, intensity-scaled visuals, and timer
 
 ## Key Conventions
 - The gesture enum is called `Move` (not `Gesture` - conflicts with SwiftUI's `Gesture` protocol)
@@ -44,6 +46,8 @@ xcodebuild -scheme RockPaperTBD -destination 'platform=iOS Simulator,name=iPhone
 - `GameConfig.bestOfOptions` defines best-of choices (3, 5, 7, Endless=0)
 - VS Computer mode: `startGame(bestOf:tapBattleMode:)` sets `isVsComputer = true`, CPU picks random moves + generates tap counts locally
 - `GameConfig.cpuTapCount(for:)` generates realistic CPU tap/swipe counts (tap: 25–45, swipe: 10–22)
+- `TapBattleMode`: `.tiesOnly` or `.always` — controls when tap battles trigger
+- `BattleType`: `.tap` or `.swipe` — determined by `BattleType.determine(roomCode:round:)` for online, `Bool.random()` for vs computer
 - Characters are purely cosmetic — `GameCharacter` has `id`, `name`, `emoji`, `flavorText`, `slot` (Move), `packId`, `imageName`
 - Character packs: 3 purchasable packs (Samurai, Space, Animals), each with one character per slot
 - Default characters (Rock/Paper/Scissors) are always unlocked
@@ -58,7 +62,7 @@ xcodebuild -scheme RockPaperTBD -destination 'platform=iOS Simulator,name=iPhone
 ## File Map
 | File | Purpose |
 |------|---------|
-| `Gesture.swift` | `Move` enum, `RoundResult`, `GameState`, `PlayerRole`, `GameConfig` |
+| `Gesture.swift` | `Move` enum, `RoundResult`, `GameState`, `PlayerRole`, `GameConfig`, `TapBattleMode`, `BattleType` |
 | `GameViewModel.swift` | State machine, scoring, best-of, vs-computer + online methods (protocol-based DI) |
 | `ContentView.swift` | Main router with animated transitions |
 | `Protocols.swift` | `GameSessionProtocol` + `SoundPlayable` — abstractions for testability |
@@ -84,11 +88,15 @@ xcodebuild -scheme RockPaperTBD -destination 'platform=iOS Simulator,name=iPhone
 | `HostWaitingView.swift` | Room code display + waiting for guest |
 | `JoinGameView.swift` | Room code input + join validation |
 | `OnlineWaitingView.swift` | Waiting for opponent's move |
-| `FriendModels.swift` | `PlayerProfile`, `FriendData`, `FriendRequest`, `GameInvite`, `FriendCode`, `DisplayName` |
+| `FriendModels.swift` | `PlayerProfile`, `FriendData`, `FriendRequest`, `GameInvite`, `FriendCode`, `DisplayName`, `PlayerStats` |
 | `FriendsManager.swift` | Firebase RTDB social layer (profile/friends/requests/invites) |
 | `FriendsListView.swift` | Friends hub: friend code, requests, friends list, invite/remove |
 | `AddFriendView.swift` | 6-char friend code input + validation |
 | `DisplayNameView.swift` | One-time display name entry |
+| `StatsManager.swift` | `@Observable` Firebase RTDB win/loss tracking + leaderboard fetching |
+| `LeaderboardView.swift` | Friend leaderboard UI — ranked list with W/L stats |
+| `TapBattleView.swift` | Tap/swipe battle mini-game — timer, ripple effects, intensity visuals |
+| `RockPaperTBDApp.swift` | `@main` App entry point — dark mode + status bar hidden |
 
 ## Dependencies
 - `firebase-ios-sdk` (SPM, `FirebaseDatabase` product only) — online multiplayer
@@ -103,6 +111,7 @@ xcodebuild -scheme RockPaperTBD -destination 'platform=iOS Simulator,name=iPhone
 /friends/{uuid}/{friendUuid}/ — mutual friendships (dual-write)
 /friendRequests/{targetUuid}/{senderUuid}/ — pending friend requests
 /invites/{targetUuid}/{senderUuid}/ — game invites (auto-removed onDisconnect)
+/stats/{uuid}/              — player win/loss stats (wins, losses — server-incremented)
 ```
 
 ## State Machine Flows
@@ -120,4 +129,4 @@ xcodebuild -scheme RockPaperTBD -destination 'platform=iOS Simulator,name=iPhone
 ```
 
 ## Status
-VS Computer mode + online multiplayer + friends system + cosmetic character IAP system implemented. See `spec.md` for full details and future phase ideas.
+VS Computer mode + online multiplayer + friends system + cosmetic character IAP system + leaderboards implemented. See `spec.md` for full details and future phase ideas.

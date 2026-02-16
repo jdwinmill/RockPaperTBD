@@ -63,12 +63,28 @@ enum CharacterCatalog {
         flavorText: "Quick and venomous", slot: .scissors, packId: "animals", imageName: "animals_snake"
     )
 
+    // MARK: - Mythical Pack
+
+    static let mythicalRock = GameCharacter(
+        id: "mythical.rock", name: "Kraken", emoji: "🐙",
+        flavorText: "Dragging ships to the deep", slot: .rock, packId: "mythical", imageName: "mythical_kraken"
+    )
+    static let mythicalPaper = GameCharacter(
+        id: "mythical.paper", name: "Phoenix", emoji: "🔥",
+        flavorText: "Reborn from the ashes", slot: .paper, packId: "mythical", imageName: "mythical_phoenix"
+    )
+    static let mythicalScissors = GameCharacter(
+        id: "mythical.scissors", name: "Basilisk", emoji: "🐍",
+        flavorText: "One glance is all it takes", slot: .scissors, packId: "mythical", imageName: "mythical_basilisk"
+    )
+
     // MARK: - All Characters
 
     static let allCharacters: [GameCharacter] = defaults + [
         samuraiRock, samuraiPaper, samuraiScissors,
         spaceRock, spacePaper, spaceScissors,
         animalsRock, animalsPaper, animalsScissors,
+        mythicalRock, mythicalPaper, mythicalScissors,
     ]
 
     // MARK: - Packs
@@ -97,7 +113,15 @@ enum CharacterCatalog {
         characters: [animalsRock, animalsPaper, animalsScissors]
     )
 
-    static let allPacks: [CharacterPack] = [samuraiPack, spacePack, animalsPack]
+    static let mythicalPack = CharacterPack(
+        id: "mythical",
+        name: "Mythical",
+        description: "Legendary creatures of myth",
+        productId: "com.outpostai.rockpapertbd.pack.mythical",
+        characters: [mythicalRock, mythicalPaper, mythicalScissors]
+    )
+
+    static let allPacks: [CharacterPack] = [samuraiPack, spacePack, animalsPack, mythicalPack]
 
     // MARK: - Lookup
 
