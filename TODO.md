@@ -104,6 +104,19 @@ Apple requires a privacy policy URL. The app uses Firebase RTDB, so cover:
 
 ## Testing
 
+### Testing Toggle: IAP Paywall Bypass
+> **Status:** ACTIVE — all packs unlocked for testing
+
+A single flag in `CharacterManager.swift` bypasses the paywall:
+
+```swift
+static let unlockAllPacks = true  // line 8
+```
+
+**To re-enable the paywall for release:** set `unlockAllPacks = false`. No other changes needed — all StoreKit code is intact.
+
+---
+
 ### 7. Real device testing
 > **Status:** Not started
 > **Blocked by:** IDs updated (#4)

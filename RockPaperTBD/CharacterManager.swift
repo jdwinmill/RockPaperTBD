@@ -2,6 +2,10 @@ import Foundation
 
 @Observable
 final class CharacterManager {
+    // MARK: - Testing Toggle
+    // Set to true to unlock all packs without purchasing. Flip back to false for release.
+    static let unlockAllPacks = true
+
     private(set) var loadout: CharacterLoadout
     private(set) var purchasedPackIds: Set<String>
 
@@ -37,14 +41,14 @@ final class CharacterManager {
 
     func availableCharacters(for slot: Move) -> [GameCharacter] {
         CharacterCatalog.characters(for: slot).filter { char in
-            char.packId == nil || purchasedPackIds.contains(char.packId!)
+            Self.unlockAllPacks || char.packId == nil || purchasedPackIds.contains(char.packId!)
         }
     }
 
     // MARK: - Purchases
 
     func isPurchased(packId: String) -> Bool {
-        purchasedPackIds.contains(packId)
+        Self.unlockAllPacks || purchasedPackIds.contains(packId)
     }
 
     func unlockPack(_ packId: String) {

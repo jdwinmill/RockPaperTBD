@@ -19,6 +19,7 @@ struct ModeSelectView: View {
     @State private var showFriends = false
     @State private var showLoadout = false
     @State private var showLeaderboard = false
+    @State private var showSettings = false
 
     private let bestOfOptions = GameConfig.bestOfOptions
 
@@ -227,6 +228,24 @@ struct ModeSelectView: View {
                     .frame(height: 60)
             }
 
+            // Settings gear
+            VStack {
+                HStack {
+                    Spacer()
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 20))
+                            .foregroundStyle(.white.opacity(0.5))
+                            .padding(12)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.trailing, 8)
+                Spacer()
+            }
+
             // Invite banner
             if let invite = friendsManager.pendingInvite {
                 VStack {
@@ -263,6 +282,12 @@ struct ModeSelectView: View {
             LoadoutView(
                 characterManager: characterManager,
                 storeManager: storeManager
+            )
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView(
+                friendsManager: friendsManager,
+                onDismiss: { showSettings = false }
             )
         }
     }

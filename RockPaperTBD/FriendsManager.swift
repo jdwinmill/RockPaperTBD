@@ -100,6 +100,28 @@ final class FriendsManager {
         )
     }
 
+    func updateDisplayName(_ newName: String) {
+        DisplayName.save(newName)
+
+        // Update player profile in Firebase
+        db.child(FirebasePath.players).child(myId).child("displayName").setValue(newName)
+
+        // Update local profile
+        if let existing = profile {
+            profile = PlayerProfile(
+                playerId: existing.playerId,
+                displayName: newName,
+                friendCode: existing.friendCode,
+                createdAt: existing.createdAt
+            )
+        }
+
+        // Fan-out: update name in each friend's record of us
+        for friend in friends {
+            db.child(FirebasePath.friends).child(friend.playerId).child(myId).child("displayName").setValue(newName)
+        }
+    }
+
     // MARK: - Friend Requests
 
     func sendFriendRequest(friendCode: String, completion: @escaping (Bool, String?) -> Void) {
