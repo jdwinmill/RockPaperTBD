@@ -13,6 +13,7 @@ struct RevealView: View {
     let isMatchOver: Bool
     var isOnlineGuest: Bool = false
     var characterManager: CharacterManager?
+    var imageCache: PackImageCache?
     let onNextRound: () -> Void
     let onReset: () -> Void
 
@@ -90,7 +91,7 @@ struct RevealView: View {
         }
     }
 
-    private var p1Display: (emoji: String, name: String, imageName: String?) {
+    private var p1Display: (emoji: String, name: String, imageName: String?, packId: String?) {
         player1Choice.display(using: characterManager)
     }
 
@@ -102,7 +103,7 @@ struct RevealView: View {
                     .foregroundStyle(.white.opacity(0.7))
                     .lineLimit(1)
 
-                CharacterDisplayView(imageName: p1Display.imageName, emoji: p1Display.emoji, size: 80)
+                CharacterDisplayView(imageName: p1Display.imageName, emoji: p1Display.emoji, size: 80, packId: p1Display.packId, imageCache: imageCache)
                     .scaleEffect(gesture1Scale)
                     .rotationEffect(.degrees(gesture1Rotation))
 

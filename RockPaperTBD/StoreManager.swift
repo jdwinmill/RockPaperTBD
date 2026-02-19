@@ -7,12 +7,7 @@ final class StoreManager {
     private(set) var isLoading = false
 
     private var updateTask: Task<Void, Never>?
-
-    static let productIds: Set<String> = [
-        "com.outpostai.rockpapertbd.pack.samurai",
-        "com.outpostai.rockpapertbd.pack.space",
-        "com.outpostai.rockpapertbd.pack.animals",
-    ]
+    private var loadedProductIds: Set<String> = []
 
     init() {
         updateTask = Task { [weak self] in
@@ -30,12 +25,14 @@ final class StoreManager {
         updateTask?.cancel()
     }
 
-    func loadProducts() async {
-        guard products.isEmpty else { return }
+    func loadProducts(for packs: [CharacterPack]) async {
+        let ids = Set(packs.map(\.productId))
+        guard !ids.isEmpty, ids != loadedProductIds else { return }
         isLoading = true
         do {
-            let storeProducts = try await Product.products(for: Self.productIds)
+            let storeProducts = try await Product.products(for: ids)
             products = storeProducts.sorted { $0.displayName < $1.displayName }
+            loadedProductIds = ids
         } catch {
             print("Failed to load products: \(error)")
         }

@@ -9,6 +9,7 @@ struct PlayerSelectView: View {
     var player2Label: String = "P2"
     var isVsComputer: Bool = false
     var characterManager: CharacterManager?
+    var imageCache: PackImageCache?
     let onSelect: (Move) -> Void
 
     @State private var appeared = false
@@ -86,7 +87,7 @@ struct PlayerSelectView: View {
             }
         } label: {
             VStack(spacing: 10) {
-                CharacterDisplayView(imageName: display.imageName, emoji: display.emoji, size: 48)
+                CharacterDisplayView(imageName: display.imageName, emoji: display.emoji, size: 48, packId: display.packId, imageCache: imageCache)
                 Text(display.name)
                     .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)

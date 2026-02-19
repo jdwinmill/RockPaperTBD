@@ -6,10 +6,13 @@ struct CharacterDisplayView: View {
     let imageName: String?
     let emoji: String
     let size: CGFloat
+    var packId: String? = nil
+    var imageCache: PackImageCache? = nil
 
     var body: some View {
-        if let imageName, UIImage(named: imageName) != nil {
-            Image(imageName)
+        if let imageName, let packId, let cache = imageCache,
+           let uiImage = cache.image(named: imageName, packId: packId) {
+            Image(uiImage: uiImage)
                 .resizable()
                 .scaledToFit()
                 .frame(width: size, height: size)

@@ -3,11 +3,12 @@ import SwiftUI
 struct OnlineWaitingView: View {
     let selectedMove: Move
     var characterManager: CharacterManager?
+    var imageCache: PackImageCache?
 
     @State private var pulseScale: CGFloat = 1.0
     @State private var appeared = false
 
-    private var display: (emoji: String, name: String, imageName: String?) {
+    private var display: (emoji: String, name: String, imageName: String?, packId: String?) {
         selectedMove.display(using: characterManager)
     }
 
@@ -23,7 +24,7 @@ struct OnlineWaitingView: View {
             VStack(spacing: 32) {
                 Spacer()
 
-                CharacterDisplayView(imageName: display.imageName, emoji: display.emoji, size: 100)
+                CharacterDisplayView(imageName: display.imageName, emoji: display.emoji, size: 100, packId: display.packId, imageCache: imageCache)
                     .scaleEffect(pulseScale)
 
                 Text(display.name)

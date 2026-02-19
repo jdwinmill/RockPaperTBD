@@ -15,6 +15,7 @@ struct CharacterPack: Identifiable {
     let name: String
     let description: String
     let productId: String
+    let active: Bool
     let characters: [GameCharacter]
 }
 

@@ -7,6 +7,8 @@ struct ModeSelectView: View {
     let friendsManager: FriendsManager
     let characterManager: CharacterManager
     let storeManager: StoreManager
+    let catalogManager: CatalogManager
+    let imageCache: PackImageCache
     let statsManager: StatsManager
     let soundManager: SoundManager
     let onAcceptInvite: (GameInvite) -> Void
@@ -283,7 +285,9 @@ struct ModeSelectView: View {
         .sheet(isPresented: $showLoadout) {
             LoadoutView(
                 characterManager: characterManager,
-                storeManager: storeManager
+                imageCache: imageCache,
+                storeManager: storeManager,
+                catalogManager: catalogManager
             )
         }
         .sheet(isPresented: $showSettings) {

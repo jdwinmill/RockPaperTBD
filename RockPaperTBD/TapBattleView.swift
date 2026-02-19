@@ -11,6 +11,7 @@ struct TapBattleView: View {
     let battleType: BattleType
     var isVsComputer: Bool = false
     var characterManager: CharacterManager?
+    var imageCache: PackImageCache?
     let onTap: () -> Void
     let onTimerEnd: () -> Void
 
@@ -258,9 +259,9 @@ struct TapBattleView: View {
     }
 
     private func playerSide(choice: Move, name: String, hasAdvantage: Bool, isTie: Bool, isLocal: Bool) -> some View {
-        let display: (emoji: String, name: String, imageName: String?) = isLocal ? choice.display(using: characterManager) : (choice.emoji, choice.name, nil)
+        let display: (emoji: String, name: String, imageName: String?, packId: String?) = isLocal ? choice.display(using: characterManager) : (choice.emoji, choice.name, nil, nil)
         return VStack(spacing: 4) {
-            CharacterDisplayView(imageName: display.imageName, emoji: display.emoji, size: 40)
+            CharacterDisplayView(imageName: display.imageName, emoji: display.emoji, size: 40, packId: display.packId, imageCache: imageCache)
 
             Text(name)
                 .font(.system(size: 12, weight: .bold, design: .rounded))

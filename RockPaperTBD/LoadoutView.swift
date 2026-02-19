@@ -2,9 +2,11 @@ import SwiftUI
 
 struct LoadoutView: View {
     let characterManager: CharacterManager
+    let imageCache: PackImageCache
     @State private var selectedSlot: Move = .rock
     @State private var showStore = false
     let storeManager: StoreManager
+    let catalogManager: CatalogManager
 
     @Environment(\.dismiss) private var dismiss
 
@@ -61,7 +63,7 @@ struct LoadoutView: View {
             }
             .toolbarBackground(.hidden, for: .navigationBar)
             .sheet(isPresented: $showStore) {
-                StoreView(storeManager: storeManager, characterManager: characterManager)
+                StoreView(storeManager: storeManager, characterManager: characterManager, catalogManager: catalogManager, imageCache: imageCache)
             }
         }
     }
@@ -76,7 +78,7 @@ struct LoadoutView: View {
                 ForEach(Move.allCases, id: \.self) { slot in
                     let char = characterManager.character(for: slot)
                     VStack(spacing: 6) {
-                        CharacterDisplayView(imageName: char.imageName, emoji: char.emoji, size: 44)
+                        CharacterDisplayView(imageName: char.imageName, emoji: char.emoji, size: 44, packId: char.packId, imageCache: imageCache)
                         Text(char.name)
                             .font(.system(size: 12, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
@@ -133,7 +135,7 @@ struct LoadoutView: View {
                     characterManager.selectCharacter(character, for: selectedSlot)
                 } label: {
                     VStack(spacing: 8) {
-                        CharacterDisplayView(imageName: character.imageName, emoji: character.emoji, size: 44)
+                        CharacterDisplayView(imageName: character.imageName, emoji: character.emoji, size: 44, packId: character.packId, imageCache: imageCache)
                         Text(character.name)
                             .font(.system(size: 13, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)

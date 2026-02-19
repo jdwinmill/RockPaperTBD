@@ -9,6 +9,9 @@ final class CharacterManager {
     private(set) var loadout: CharacterLoadout
     private(set) var purchasedPackIds: Set<String>
 
+    var catalogManager: CatalogManager?
+    var imageCache: PackImageCache?
+
     private let loadoutKey = "characterLoadout"
     private let purchasedKey = "purchasedPacks"
 
@@ -17,7 +20,7 @@ final class CharacterManager {
            let saved = try? JSONDecoder().decode(CharacterLoadout.self, from: data) {
             self.loadout = saved
         } else {
-            self.loadout = CharacterCatalog.defaultLoadout
+            self.loadout = CatalogManager.defaultLoadout
         }
 
         if let ids = UserDefaults.standard.stringArray(forKey: "purchasedPacks") {
@@ -31,7 +34,10 @@ final class CharacterManager {
 
     func character(for slot: Move) -> GameCharacter {
         let id = loadout.characterId(for: slot)
-        return CharacterCatalog.character(byId: id) ?? CharacterCatalog.defaults.first { $0.slot == slot }!
+        if let char = catalogManager?.character(byId: id) {
+            return char
+        }
+        return CatalogManager.defaults.first { $0.slot == slot }!
     }
 
     func selectCharacter(_ character: GameCharacter, for slot: Move) {
@@ -40,7 +46,8 @@ final class CharacterManager {
     }
 
     func availableCharacters(for slot: Move) -> [GameCharacter] {
-        CharacterCatalog.characters(for: slot).filter { char in
+        let chars = catalogManager?.characters(for: slot) ?? CatalogManager.defaults.filter { $0.slot == slot }
+        return chars.filter { char in
             Self.unlockAllPacks || char.packId == nil || purchasedPackIds.contains(char.packId!)
         }
     }
@@ -57,7 +64,7 @@ final class CharacterManager {
     }
 
     func resetAll() {
-        loadout = CharacterCatalog.defaultLoadout
+        loadout = CatalogManager.defaultLoadout
         purchasedPackIds = []
         UserDefaults.standard.removeObject(forKey: loadoutKey)
         UserDefaults.standard.removeObject(forKey: purchasedKey)
@@ -65,9 +72,9 @@ final class CharacterManager {
 
     // MARK: - Display Helpers
 
-    func display(for move: Move) -> (emoji: String, name: String, imageName: String?) {
+    func display(for move: Move) -> (emoji: String, name: String, imageName: String?, packId: String?) {
         let char = character(for: move)
-        return (char.emoji, char.name, char.imageName)
+        return (char.emoji, char.name, char.imageName, char.packId)
     }
 
     // MARK: - Persistence

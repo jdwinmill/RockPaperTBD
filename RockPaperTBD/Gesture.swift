@@ -35,8 +35,8 @@ enum Move: String, CaseIterable, Codable {
         }
     }
 
-    func display(using manager: CharacterManager?) -> (emoji: String, name: String, imageName: String?) {
-        guard let manager else { return (emoji, name, nil) }
+    func display(using manager: CharacterManager?) -> (emoji: String, name: String, imageName: String?, packId: String?) {
+        guard let manager else { return (emoji, name, nil, nil) }
         return manager.display(for: self)
     }
 

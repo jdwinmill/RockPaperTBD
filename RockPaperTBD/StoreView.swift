@@ -4,9 +4,15 @@ import StoreKit
 struct StoreView: View {
     let storeManager: StoreManager
     let characterManager: CharacterManager
+    let catalogManager: CatalogManager
+    let imageCache: PackImageCache
 
     @State private var purchasingId: String?
     @Environment(\.dismiss) private var dismiss
+
+    private var visiblePacks: [CharacterPack] {
+        catalogManager.storePacks(purchasedIds: characterManager.purchasedPackIds)
+    }
 
     var body: some View {
         NavigationStack {
@@ -25,7 +31,7 @@ struct StoreView: View {
                             .foregroundStyle(.white)
                             .padding(.top, 8)
 
-                        ForEach(CharacterCatalog.allPacks) { pack in
+                        ForEach(visiblePacks) { pack in
                             packCard(pack)
                         }
 
@@ -57,9 +63,8 @@ struct StoreView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
         }
         .task {
-            await storeManager.loadProducts()
+            await storeManager.loadProducts(for: catalogManager.packs)
             await storeManager.restorePurchases()
-            // Sync any StoreKit purchases to CharacterManager
             syncPurchases()
         }
     }
@@ -68,6 +73,8 @@ struct StoreView: View {
         let owned = characterManager.isPurchased(packId: pack.id)
         let product = storeManager.products.first { $0.id == pack.productId }
         let isPurchasing = purchasingId == pack.productId
+        let isCached = imageCache.cachedPacks.contains(pack.id)
+        let isDownloading = imageCache.downloadingPacks.contains(pack.id)
 
         return VStack(spacing: 16) {
             HStack {
@@ -93,7 +100,7 @@ struct StoreView: View {
             HStack(spacing: 12) {
                 ForEach(pack.characters) { character in
                     VStack(spacing: 6) {
-                        CharacterDisplayView(imageName: character.imageName, emoji: character.emoji, size: 40)
+                        CharacterDisplayView(imageName: character.imageName, emoji: character.emoji, size: 40, packId: character.packId, imageCache: imageCache)
                         Text(character.name)
                             .font(.system(size: 12, weight: .bold, design: .rounded))
                             .foregroundStyle(.white.opacity(0.8))
@@ -105,7 +112,60 @@ struct StoreView: View {
                 }
             }
 
-            if !owned {
+            if owned {
+                // Download/delete controls for owned packs
+                if isDownloading {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .tint(.white)
+                        Text("Downloading...")
+                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                } else if isCached {
+                    HStack(spacing: 12) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(Theme.friendGreen)
+                            Text("Downloaded")
+                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                                .foregroundStyle(.white.opacity(0.6))
+                        }
+                        Spacer()
+                        Button {
+                            imageCache.deletePack(pack.id)
+                        } label: {
+                            Text("Delete")
+                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                                .foregroundStyle(.red.opacity(0.8))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } else {
+                    Button {
+                        let imageNames = pack.characters.compactMap(\.imageName)
+                        Task {
+                            await imageCache.downloadPack(pack.id, imageNames: imageNames)
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.down.circle.fill")
+                            Text("Download Images")
+                        }
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            Capsule()
+                                .fill(.white.opacity(0.2))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            } else {
                 Button {
                     guard let product, purchasingId == nil else { return }
                     purchasingId = pack.productId
@@ -113,6 +173,9 @@ struct StoreView: View {
                         let success = await storeManager.purchase(product)
                         if success {
                             characterManager.unlockPack(pack.id)
+                            // Auto-download images after purchase
+                            let imageNames = pack.characters.compactMap(\.imageName)
+                            await imageCache.downloadPack(pack.id, imageNames: imageNames)
                         }
                         purchasingId = nil
                     }
@@ -147,7 +210,7 @@ struct StoreView: View {
     }
 
     private func syncPurchases() {
-        for pack in CharacterCatalog.allPacks {
+        for pack in catalogManager.packs {
             if storeManager.isPurchased(pack.productId) {
                 characterManager.unlockPack(pack.id)
             }

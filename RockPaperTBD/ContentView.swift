@@ -6,6 +6,8 @@ struct ContentView: View {
     @State private var friendsManager = FriendsManager()
     @State private var characterManager = CharacterManager()
     @State private var storeManager = StoreManager()
+    @State private var catalogManager = CatalogManager()
+    @State private var imageCache = PackImageCache()
     @State private var statsManager = StatsManager()
     @State private var pendingInviteFriendId: String?
     @State private var showInviteError = false
@@ -27,6 +29,8 @@ struct ContentView: View {
                     friendsManager: friendsManager,
                     characterManager: characterManager,
                     storeManager: storeManager,
+                    catalogManager: catalogManager,
+                    imageCache: imageCache,
                     statsManager: statsManager,
                     soundManager: soundManager,
                     onAcceptInvite: { invite in acceptInvite(invite) },
@@ -73,6 +77,7 @@ struct ContentView: View {
                     player2Label: game.isVsComputer ? "CPU" : "P2",
                     isVsComputer: game.isVsComputer,
                     characterManager: characterManager,
+                    imageCache: imageCache,
                     onSelect: { move in
                         game.selectGesture(move)
                     }
@@ -91,6 +96,7 @@ struct ContentView: View {
                     player2Score: game.player2Score,
                     isOnline: true,
                     characterManager: game.session?.role == .host ? characterManager : nil,
+                    imageCache: imageCache,
                     onSelect: { move in game.submitOnlineMove(move) }
                 )
                 .transition(.asymmetric(
@@ -102,7 +108,8 @@ struct ContentView: View {
             case .onlineWaiting:
                 OnlineWaitingView(
                     selectedMove: (game.session?.role == .host ? game.player1Choice : game.player2Choice) ?? .rock,
-                    characterManager: game.characterManager
+                    characterManager: game.characterManager,
+                    imageCache: imageCache
                 )
                 .transition(.opacity)
 
@@ -128,6 +135,7 @@ struct ContentView: View {
                         battleType: game.battleType,
                         isVsComputer: game.isVsComputer,
                         characterManager: characterManager,
+                        imageCache: imageCache,
                         onTap: { game.registerTap() },
                         onTimerEnd: { game.submitTapCount() }
                     )
@@ -150,6 +158,7 @@ struct ContentView: View {
                         isMatchOver: game.isMatchOver,
                         isOnlineGuest: game.isOnline && game.session?.role == .guest,
                         characterManager: characterManager,
+                        imageCache: imageCache,
                         onNextRound: {
                             if game.isOnline {
                                 game.onlineNextRound()
@@ -222,6 +231,9 @@ struct ContentView: View {
             friendsManager.observeFriends()
             friendsManager.observeRequests()
             friendsManager.observeInvites()
+            catalogManager.observeCatalog()
+            characterManager.catalogManager = catalogManager
+            characterManager.imageCache = imageCache
             game.characterManager = characterManager
             // Eagerly load profile if name already saved
             if let name = DisplayName.saved {
@@ -243,11 +255,16 @@ struct ContentView: View {
         // Re-initialize managers for a clean slate
         game.resetGame()
         friendsManager = FriendsManager()
+        catalogManager = CatalogManager()
+        imageCache = PackImageCache()
         characterManager = CharacterManager()
+        characterManager.catalogManager = catalogManager
+        characterManager.imageCache = imageCache
         statsManager = StatsManager()
         soundManager = SoundManager()
         game = GameViewModel(sound: soundManager)
         game.characterManager = characterManager
+        catalogManager.observeCatalog()
     }
 
     private func inviteFriend(_ friendId: String, bestOf: Int, tapBattleMode: TapBattleMode = .tiesOnly) {
