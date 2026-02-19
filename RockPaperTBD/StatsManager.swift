@@ -14,6 +14,11 @@ final class StatsManager {
             .setValue(ServerValue.increment(1 as NSNumber))
     }
 
+    func deleteStats() {
+        db.child(FirebasePath.stats).child(myId).removeValue()
+        leaderboard = []
+    }
+
     func recordLoss() {
         db.child(FirebasePath.stats).child(myId).child("losses")
             .setValue(ServerValue.increment(1 as NSNumber))

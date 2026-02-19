@@ -301,6 +301,40 @@ final class FriendsManager {
         }
     }
 
+    // MARK: - Account Deletion
+
+    func deleteAllData(completion: @escaping (Bool) -> Void) {
+        stopObserving()
+
+        var updates: [String: Any] = [
+            "\(FirebasePath.friends)/\(myId)": NSNull(),
+            "\(FirebasePath.friendRequests)/\(myId)": NSNull(),
+            "\(FirebasePath.players)/\(myId)": NSNull(),
+            "\(FirebasePath.invites)/\(myId)": NSNull(),
+        ]
+
+        // Remove the other side of each friendship
+        for friend in friends {
+            updates["\(FirebasePath.friends)/\(friend.playerId)/\(myId)"] = NSNull()
+        }
+
+        // Remove friend code index entry
+        if let code = ProfileCache.friendCode {
+            updates["\(FirebasePath.friendCodeIndex)/\(code)"] = NSNull()
+        }
+
+        db.updateChildValues(updates) { error, _ in
+            DispatchQueue.main.async {
+                completion(error == nil)
+            }
+        }
+
+        friends = []
+        incomingRequests = []
+        pendingInvite = nil
+        profile = nil
+    }
+
     func stopObserving() {
         if let handle = friendsHandle {
             db.child(FirebasePath.friends).child(myId).removeObserver(withHandle: handle)

@@ -3,6 +3,13 @@ import UIKit
 
 @Observable
 final class SoundManager: SoundPlayable {
+    var soundEnabled: Bool {
+        didSet { UserDefaults.standard.set(soundEnabled, forKey: "soundEnabled") }
+    }
+    var hapticsEnabled: Bool {
+        didSet { UserDefaults.standard.set(hapticsEnabled, forKey: "hapticsEnabled") }
+    }
+
     private let impactLight = UIImpactFeedbackGenerator(style: .light)
     private let impactMedium = UIImpactFeedbackGenerator(style: .medium)
     private let impactHeavy = UIImpactFeedbackGenerator(style: .heavy)
@@ -21,6 +28,10 @@ final class SoundManager: SoundPlayable {
     private var loseBuffers: [AVAudioPCMBuffer] = []
 
     init() {
+        let defaults = UserDefaults.standard
+        // UserDefaults returns false for unset bools, so use object check for first launch
+        self.soundEnabled = defaults.object(forKey: "soundEnabled") as? Bool ?? true
+        self.hapticsEnabled = defaults.object(forKey: "hapticsEnabled") as? Bool ?? true
         setupEngine()
         generateBuffers()
         prepareHaptics()
@@ -78,66 +89,70 @@ final class SoundManager: SoundPlayable {
     }
 
     func playCountdownBeep(step: Int) {
-        switch step {
-        case 3, 2: impactMedium.impactOccurred()
-        case 1: impactHeavy.impactOccurred()
-        default: impactHeavy.impactOccurred(intensity: 1.0)
+        if hapticsEnabled {
+            switch step {
+            case 3, 2: impactMedium.impactOccurred()
+            case 1: impactHeavy.impactOccurred()
+            default: impactHeavy.impactOccurred(intensity: 1.0)
+            }
         }
-        if let buffer = countdownBuffers[step] {
+        if soundEnabled, let buffer = countdownBuffers[step] {
             scheduleBuffer(buffer)
         }
     }
 
     func playTap() {
-        impactLight.impactOccurred()
-        if let buffer = tapBuffer {
+        if hapticsEnabled { impactLight.impactOccurred() }
+        if soundEnabled, let buffer = tapBuffer {
             scheduleBuffer(buffer)
         }
     }
 
     func playWin() {
-        notification.notificationOccurred(.success)
-        guard winBuffers.count == 3 else { return }
+        if hapticsEnabled { notification.notificationOccurred(.success) }
+        guard soundEnabled, winBuffers.count == 3 else { return }
         scheduleBuffer(winBuffers[0])
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
-            guard let self else { return }
+            guard let self, self.soundEnabled else { return }
             self.scheduleBuffer(self.winBuffers[1])
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.30) { [weak self] in
-            guard let self else { return }
+            guard let self, self.soundEnabled else { return }
             self.scheduleBuffer(self.winBuffers[2])
         }
     }
 
     func playTie() {
-        notification.notificationOccurred(.warning)
-        guard tieBuffers.count == 2 else { return }
+        if hapticsEnabled { notification.notificationOccurred(.warning) }
+        guard soundEnabled, tieBuffers.count == 2 else { return }
         scheduleBuffer(tieBuffers[0])
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-            guard let self else { return }
+            guard let self, self.soundEnabled else { return }
             self.scheduleBuffer(self.tieBuffers[1])
         }
     }
 
     func playLose() {
-        notification.notificationOccurred(.error)
-        guard loseBuffers.count == 3 else { return }
+        if hapticsEnabled { notification.notificationOccurred(.error) }
+        guard soundEnabled, loseBuffers.count == 3 else { return }
         scheduleBuffer(loseBuffers[0])
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-            guard let self else { return }
+            guard let self, self.soundEnabled else { return }
             self.scheduleBuffer(self.loseBuffers[1])
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
-            guard let self else { return }
+            guard let self, self.soundEnabled else { return }
             self.scheduleBuffer(self.loseBuffers[2])
         }
     }
 
     func playBattleTap(intensity: Double) {
-        impactLight.impactOccurred()
-        let frequency = 300.0 + intensity * 500.0 // 300–800 Hz
-        if let buffer = makeBuffer(frequency: frequency, duration: 0.04) {
-            scheduleBuffer(buffer)
+        if hapticsEnabled { impactLight.impactOccurred() }
+        if soundEnabled {
+            let frequency = 300.0 + intensity * 500.0 // 300–800 Hz
+            if let buffer = makeBuffer(frequency: frequency, duration: 0.04) {
+                scheduleBuffer(buffer)
+            }
         }
     }
 

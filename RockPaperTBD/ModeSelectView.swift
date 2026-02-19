@@ -8,8 +8,10 @@ struct ModeSelectView: View {
     let characterManager: CharacterManager
     let storeManager: StoreManager
     let statsManager: StatsManager
+    let soundManager: SoundManager
     let onAcceptInvite: (GameInvite) -> Void
     let onInviteFriend: (String, Int, TapBattleMode) -> Void
+    let onDeleteAccount: () -> Void
 
     @State private var appeared = false
     @State private var emojiOffset: [CGFloat] = [0, 0, 0]
@@ -287,7 +289,14 @@ struct ModeSelectView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView(
                 friendsManager: friendsManager,
-                onDismiss: { showSettings = false }
+                soundManager: soundManager,
+                statsManager: statsManager,
+                characterManager: characterManager,
+                onDismiss: { showSettings = false },
+                onDeleteAccount: {
+                    showSettings = false
+                    onDeleteAccount()
+                }
             )
         }
     }

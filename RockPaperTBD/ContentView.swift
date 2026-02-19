@@ -1,13 +1,20 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var game = GameViewModel()
+    @State private var soundManager = SoundManager()
+    @State private var game: GameViewModel
     @State private var friendsManager = FriendsManager()
     @State private var characterManager = CharacterManager()
     @State private var storeManager = StoreManager()
     @State private var statsManager = StatsManager()
     @State private var pendingInviteFriendId: String?
     @State private var showInviteError = false
+
+    init() {
+        let sm = SoundManager()
+        _soundManager = State(initialValue: sm)
+        _game = State(initialValue: GameViewModel(sound: sm))
+    }
 
     var body: some View {
         ZStack {
@@ -21,8 +28,10 @@ struct ContentView: View {
                     characterManager: characterManager,
                     storeManager: storeManager,
                     statsManager: statsManager,
+                    soundManager: soundManager,
                     onAcceptInvite: { invite in acceptInvite(invite) },
-                    onInviteFriend: { friendId, bestOf, battleMode in inviteFriend(friendId, bestOf: bestOf, tapBattleMode: battleMode) }
+                    onInviteFriend: { friendId, bestOf, battleMode in inviteFriend(friendId, bestOf: bestOf, tapBattleMode: battleMode) },
+                    onDeleteAccount: { handleAccountDeletion() }
                 )
                 .transition(.opacity)
 
@@ -228,6 +237,17 @@ struct ContentView: View {
                 showInviteError = true
             }
         }
+    }
+
+    private func handleAccountDeletion() {
+        // Re-initialize managers for a clean slate
+        game.resetGame()
+        friendsManager = FriendsManager()
+        characterManager = CharacterManager()
+        statsManager = StatsManager()
+        soundManager = SoundManager()
+        game = GameViewModel(sound: soundManager)
+        game.characterManager = characterManager
     }
 
     private func inviteFriend(_ friendId: String, bestOf: Int, tapBattleMode: TapBattleMode = .tiesOnly) {

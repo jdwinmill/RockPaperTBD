@@ -56,6 +56,13 @@ final class CharacterManager {
         savePurchases()
     }
 
+    func resetAll() {
+        loadout = CharacterCatalog.defaultLoadout
+        purchasedPackIds = []
+        UserDefaults.standard.removeObject(forKey: loadoutKey)
+        UserDefaults.standard.removeObject(forKey: purchasedKey)
+    }
+
     // MARK: - Display Helpers
 
     func display(for move: Move) -> (emoji: String, name: String, imageName: String?) {
