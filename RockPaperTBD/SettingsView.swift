@@ -13,6 +13,7 @@ struct SettingsView: View {
     @State private var originalName: String = ""
     @State private var showDeleteConfirm = false
     @State private var isDeleting = false
+    @State private var showPrivacyPolicy = false
 
     private var hasChanges: Bool {
         let trimmed = editedName.trimmingCharacters(in: .whitespaces)
@@ -136,14 +137,15 @@ struct SettingsView: View {
                                 .font(.system(size: 12, weight: .bold, design: .rounded))
                                 .foregroundStyle(.white.opacity(0.4))
 
-                            // TODO: Replace with actual privacy policy URL before App Store submission
-                            Link(destination: URL(string: "https://example.com/privacy")!) {
+                            Button {
+                                showPrivacyPolicy = true
+                            } label: {
                                 HStack {
                                     Label("Privacy Policy", systemImage: "hand.raised.fill")
                                         .font(.system(size: 16, weight: .medium, design: .rounded))
                                         .foregroundStyle(.white)
                                     Spacer()
-                                    Image(systemName: "arrow.up.right")
+                                    Image(systemName: "chevron.right")
                                         .font(.system(size: 12, weight: .bold))
                                         .foregroundStyle(.white.opacity(0.4))
                                 }
@@ -154,6 +156,7 @@ struct SettingsView: View {
                                         .fill(.white.opacity(0.1))
                                 )
                             }
+                            .buttonStyle(.plain)
                         }
 
                         // Danger Zone
@@ -203,6 +206,9 @@ struct SettingsView: View {
                         .foregroundStyle(.white)
                 }
             }
+            .sheet(isPresented: $showPrivacyPolicy) {
+                PrivacyPolicyView()
+            }
             .alert("Delete All Data?", isPresented: $showDeleteConfirm) {
                 Button("Delete Everything", role: .destructive) {
                     performDeletion()
@@ -246,5 +252,85 @@ struct SettingsView: View {
             isDeleting = false
             onDeleteAccount()
         }
+    }
+}
+
+// MARK: - Privacy Policy
+
+private struct PrivacyPolicyView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                LinearGradient(
+                    colors: [Theme.startTop, Theme.startMid, Theme.startBottom],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+
+                ScrollView {
+                    Text(privacyText)
+                        .font(.system(size: 14, weight: .regular, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .padding(24)
+                }
+            }
+            .navigationTitle("Privacy Policy")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                }
+            }
+        }
+    }
+
+    private var privacyText: String {
+        """
+        Last updated: February 2025
+
+        Rock Paper TBD ("the App") is developed by Outpost AI Labs. Your privacy is important to us.
+
+        INFORMATION WE COLLECT
+
+        The App stores the following data to provide online multiplayer and social features:
+
+        - Device Identifier: A randomly generated UUID stored on your device. This is not tied to your Apple ID or any personal information.
+        - Display Name: A name you choose, used to identify you to friends and opponents.
+        - Friend Code: A randomly generated code that lets other players add you as a friend.
+        - Friends List: The list of players you have added as friends.
+        - Game Statistics: Your win/loss record for the leaderboard.
+
+        HOW WE STORE YOUR DATA
+
+        All online data is stored in Firebase Realtime Database, a service provided by Google. Data is associated only with your random device identifier, not with your name, email, or Apple ID.
+
+        Character loadout preferences and purchased pack records are stored locally on your device using UserDefaults.
+
+        DATA SHARING
+
+        We do not sell, share, or transfer your data to third parties. Your display name and friend code are visible to other players only when you share your friend code or play an online match.
+
+        DATA DELETION
+
+        You can delete all of your data at any time from Settings > Delete All My Data. This permanently removes your profile, friends, statistics, and all associated data from our servers and your device.
+
+        CHILDREN'S PRIVACY
+
+        The App does not knowingly collect personal information from children under 13. The device identifier is randomly generated and not linked to any personal information.
+
+        CHANGES TO THIS POLICY
+
+        We may update this privacy policy from time to time. Continued use of the App constitutes acceptance of any changes.
+
+        CONTACT
+
+        If you have questions about this privacy policy, please contact us at support@outpostailabs.com.
+        """
     }
 }
