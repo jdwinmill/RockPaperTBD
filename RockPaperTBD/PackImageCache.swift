@@ -1,8 +1,8 @@
 import UIKit
 
-enum SupabaseConfig {
-    // TODO: Replace with actual Supabase project ref
-    static let characterPacksBucketURL = "https://YOUR_PROJECT_REF.supabase.co/storage/v1/object/public/character-packs"
+enum StorageBucketConfig {
+    // TODO: Replace with your Firebase Storage bucket name (from GoogleService-Info.plist STORAGE_BUCKET)
+    static let bucket = "YOUR_PROJECT.firebasestorage.app"
 }
 
 @Observable
@@ -71,7 +71,8 @@ final class PackImageCache {
         let destination = imageURL(imageName: name, packId: packId)
         guard !FileManager.default.fileExists(atPath: destination.path) else { return }
 
-        let remoteURL = URL(string: "\(SupabaseConfig.characterPacksBucketURL)/\(packId)/\(name).png")!
+        let encodedPath = "character-packs%2F\(packId)%2F\(name).png"
+        let remoteURL = URL(string: "https://firebasestorage.googleapis.com/v0/b/\(StorageBucketConfig.bucket)/o/\(encodedPath)?alt=media")!
         do {
             let (data, response) = try await URLSession.shared.data(from: remoteURL)
             guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return }
